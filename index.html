@@ -1,0 +1,2718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holy Bible A.S</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='26' y='4' width='12' height='56' rx='2' fill='%23ffffff'/><rect x='12' y='16' width='40' height='12' rx='2' fill='%23ffffff'/></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/open-dyslexic-regular.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a1f0a; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; overflow: auto; }
+body.rtl { direction: rtl; text-align: right; }
+body.rtl header { flex-direction: row-reverse; }
+body.rtl .controls { flex-direction: row-reverse; justify-content: flex-start; }
+body.rtl .verse .num { margin-right: 0; margin-left: 6px; }
+body.rtl .verse.active { border-left: none; border-right: 3px solid #ffc107; }
+body.rtl .verse-info { text-align: left; }
+body.rtl .audio-bar { flex-direction: row-reverse; }
+body.rtl select, body.rtl button { font-family: 'Segoe UI', 'Noto Naskh Arabic', 'Geeza Pro', 'Traditional Arabic', 'Sakkal Majalla', sans-serif; }
+header { background: #0d2a0d; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 2px solid #1a5c2a; }
+header h1 { color: #fff; font-size: 1.4rem; }
+.controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.controls select, .controls button, .controls input[type="file"] { padding: 6px 12px; border: 1px solid #1a5c2a; border-radius: 4px; background: #0a1f0a; color: #ffffff; font-size: 0.9rem; }
+#versionSelect { min-width: 160px; background: #1a5c2a; color: #4caf50; font-weight: 600; }
+.controls select:focus, .controls button:focus { outline: 2px solid #4caf50; }
+.controls button { cursor: pointer; background: #1a5c2a; transition: background 0.2s; }
+.controls button:hover { background: #4caf50; }
+.controls button.active { background: #4caf50; }
+.controls label { font-size: 0.85rem; color: #8fbc8f; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.controls input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.audio-bar { background: #0d2a0d; padding: 8px 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #1a5c2a; }
+.audio-bar .time { font-size: 0.85rem; color: #8fbc8f; min-width: 100px; }
+#seekBar { flex: 1; min-width: 100px; accent-color: #4caf50; }
+#volumeSlider { width: 90px; accent-color: #4caf50; }
+.audio-bar .volume-wrap { display: flex; align-items: center; gap: 5px; }
+.audio-bar .volume-wrap input { width: 80px; }
+.vol-pct { font-size: 0.8rem; color: #8fbc8f; min-width: 30px; }
+.verse-info { font-size: 0.85rem; color: #d4ff00; min-width: 80px; text-align: right; }
+#chapter-title { background: #1a5c2a; padding: 6px 15px; font-size: 1rem; font-weight: 600; color: #fff; text-align: center; letter-spacing: 0.5px; }
+#verses-container { flex: 1; overflow: visible; padding: 15px 20px 40px 20px; max-width: 800px; margin: 0 auto; width: 100%; }
+.verse { padding: 4px 10px; margin: 1px 0; border-radius: 3px; transition: background 0.3s, color 0.3s; cursor: pointer; line-height: 1.6; font-size: 1.05rem; font-family: 'Segoe UI', 'Noto Sans', 'Noto Naskh Arabic', 'Geeza Pro', 'Traditional Arabic', 'SBL Greek', 'Gentium Plus', 'Galatia SIL', 'Palatino Linotype', serif; }
+.verse:hover { background: rgba(255, 235, 59, 0.15); }
+.verse .num { color: #4caf50; font-weight: 700; margin-right: 6px; font-size: 0.75rem; }
+.verse.active { background: linear-gradient(135deg, rgba(255,235,59,0.25), rgba(255,193,7,0.4)); border-left: 3px solid #ffc107; color: #fff; }
+.verse.active .num { color: #fff9c4; }
+.w { display: inline-block; transition: background 0.15s, color 0.15s; border-radius: 2px; padding: 0 1px; }
+.w[data-sn] { cursor: pointer; }
+.w[data-sn]:hover { background: rgba(76, 175, 80, 0.18); }
+.dict-overlay { position: fixed; inset: 0; background: rgba(10, 10, 20, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+.dict-overlay.open { display: flex; }
+.dict-box { background: #0d2a0d; border: 1px solid #1a5c2a; border-radius: 8px; width: 100%; max-width: 620px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 12px 45px rgba(0,0,0,0.6); }
+.dict-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #1a5c2a; }
+.dict-title { color: #4caf50; font-weight: 600; font-size: 0.95rem; }
+.dict-close { background: none; border: none; color: #8fbc8f; font-size: 1.15rem; cursor: pointer; padding: 2px 8px; line-height: 1; }
+.dict-close:hover { color: #4caf50; }
+.dict-body { padding: 14px 16px 18px; overflow-y: auto; }
+.dict-entry + .dict-entry { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #1a5c2a; }
+.dict-lemma { font-size: 1.45rem; color: #fff; line-height: 1.3; }
+.dict-translit { font-size: 1rem; color: #81c784; font-style: italic; font-family: 'Segoe UI', sans-serif; }
+.dict-num { color: #7a9a7a; font-size: 0.78rem; font-family: monospace; margin-bottom: 2px; }
+.dict-def { margin-top: 8px; color: #ffffff; line-height: 1.55; }
+.dict-deriv { margin-top: 6px; color: #7a9a7a; font-size: 0.85rem; line-height: 1.5; }
+.dict-kjv { margin-top: 8px; color: #81c784; font-size: 0.9rem; line-height: 1.5; }
+.dict-kjv-label { color: #4caf50; font-weight: 600; }
+.dict-tabs { display: flex; gap: 0; border-bottom: 1px solid #1a5c2a; padding: 0 16px; background: #0a1f0a; overflow-x: auto; scrollbar-width: none; }
+.dict-tabs::-webkit-scrollbar { display: none; }
+.dict-tab { padding: 8px 10px; font-size: 0.75rem; color: #6a8a6a; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; white-space: nowrap; }
+.dict-tab:hover { color: #8fbc8f; }
+.dict-tab.active { color: #4caf50; border-bottom-color: #4caf50; font-weight: 600; }
+.dict-section-label { color: #4caf50; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
+.dict-section-label:first-child { margin-top: 0; }
+.dict-topical { margin-top: 6px; color: #c8e6c9; line-height: 1.55; font-size: 0.92rem; white-space: pre-wrap; }
+.help-overlay { position: fixed; inset: 0; background: rgba(10, 10, 20, 0.75); display: none; align-items: center; justify-content: center; z-index: 2100; padding: 16px; }
+.help-overlay.open { display: flex; }
+.help-box { background: #0d2a0d; border: 1px solid #1a5c2a; border-radius: 8px; width: 100%; max-width: 460px; box-shadow: 0 12px 45px rgba(0,0,0,0.6); }
+.help-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #1a5c2a; }
+.help-head span { color: #4caf50; font-weight: 600; font-size: 0.95rem; }
+.help-body { padding: 16px 18px; }
+.help-row { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid #112a11; }
+.help-row:last-child { border-bottom: none; }
+.help-key { background: #1a5c2a; color: #fff; font-family: monospace; font-size: 0.82rem; padding: 3px 10px; border-radius: 4px; min-width: 90px; text-align: center; white-space: nowrap; font-weight: 600; }
+.help-desc { color: #c8e6c9; font-size: 0.88rem; }
+.help-note { margin-top: 12px; color: #6a8a6a; font-size: 0.8rem; font-style: italic; line-height: 1.5; }
+#helpBtn { font-weight: 700; font-size: 1rem; }
+.dict-none { color: #7a9a7a; font-style: italic; }
+.parallel-bar { background: #1a5c2a; padding: 6px 15px; display: none; align-items: center; gap: 10px; flex-wrap: wrap; }
+.parallel-bar select { padding: 4px 8px; border: 1px solid #1a5c2a; border-radius: 4px; background: #0a1f0a; color: #ffffff; font-size: 0.85rem; }
+.parallel-label { color: #4caf50; font-weight: 600; font-size: 0.85rem; }
+.parallel-hint { color: #6a8a6a; font-size: 0.78rem; font-style: italic; }
+.parallel #verses-container { max-width: 1600px; display: flex; gap: 14px; align-items: flex-start; }
+.parallel #verses-container .pane { flex: 1 1 0; min-width: 0; }
+.parallel #verses-container .pane + .pane { border-left: 1px solid #1a5c2a; padding-left: 14px; }
+.pane-title { font-size: 0.82rem; color: #4caf50; font-weight: 700; margin-bottom: 8px; text-align: center; letter-spacing: 0.5px; }
+.w.wa { background: #4caf50; color: #fff; }
+.w .sn { display: block; font-size: 0.55em; color: #7a9a7a; line-height: 1; margin-bottom: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
+.w.wa .sn { color: #c8e6c9; }
+.w .en { display: block; font-size: 0.55em; color: #81c784; line-height: 1; margin-top: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
+.w.wa .en { color: #c8e6c9; }
+.timestamp-badge { float: right; font-size: 0.65rem; color: #3a5a3a; margin-left: 8px; font-family: monospace; }
+#status { padding: 4px 12px; font-size: 0.8rem; color: #6a8a6a; text-align: center; }
+.timestamp-mode #verses-container .verse { border: 1px dashed #2a4a2a; margin: 4px 0; }
+.hint { color: #4a6a4a; font-style: italic; font-size: 0.85rem; padding: 4px 12px; text-align: center; }
+.tts-bar { background: #1a5c2a; padding: 8px 15px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid #4caf50; }
+.tts-btn { padding: 8px 18px; border: none; border-radius: 5px; background: #4caf50; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.tts-btn:hover { background: #388e3c; }
+.tts-btn.tts-stop { background: #3a5a3a; }
+.tts-btn.tts-stop:hover { background: #2a4a2a; }
+.tts-btn.tts-stop { display: none; }
+.tts-btn.tts-stop.visible { display: inline-block; }
+.tts-label { color: #8fbc8f; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+.tts-label input[type="range"] { width: 70px; accent-color: #4caf50; }
+.tts-status { color: #4caf50; font-size: 0.85rem; }
+#ttsVoice { padding: 4px 8px; border: 1px solid #1a5c2a; border-radius: 4px; background: #0a1f0a; color: #ffffff; font-size: 0.8rem; max-width: 200px; }
+#ttsVoice option { background: #0a1f0a; color: #ffffff; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #0a1f0a; }
+::-webkit-scrollbar-thumb { background: #1a5c2a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #4caf50; }
+
+/* Dyslexia Mode */
+.dyslexia-bar { background: #1a1a2e; padding: 8px 15px; display: none; align-items: center; gap: 14px; flex-wrap: wrap; border-bottom: 2px solid #f0c040; }
+.dyslexia-bar.visible { display: flex; }
+.dyslexia-label { color: #f0c040; font-size: 0.8rem; font-weight: 600; }
+.dyslexia-ctrl { display: flex; align-items: center; gap: 4px; }
+.dyslexia-ctrl label { color: #a0a0c0; font-size: 0.75rem; }
+.dyslexia-ctrl input[type="range"] { width: 80px; accent-color: #f0c040; }
+.dyslexia-ctrl select { padding: 3px 6px; border: 1px solid #333; border-radius: 4px; background: #0d0d1a; color: #fff; font-size: 0.75rem; }
+.dyslexia-ctrl button { padding: 4px 10px; border: 1px solid #f0c040; border-radius: 4px; background: transparent; color: #f0c040; font-size: 0.75rem; cursor: pointer; transition: background 0.2s; }
+.dyslexia-ctrl button:hover { background: rgba(240,192,64,0.15); }
+.dyslexia-ctrl button.active { background: #f0c040; color: #0d0d1a; font-weight: 600; }
+.reading-ruler { position: fixed; left: 0; right: 0; height: 50px; pointer-events: none; z-index: 500; display: none; }
+.reading-ruler.visible { display: block; }
+.reading-ruler-line { position: absolute; left: 0; right: 0; height: 50px; background: linear-gradient(to bottom, rgba(240,192,64,0.08) 0%, rgba(240,192,64,0.18) 50%, rgba(240,192,64,0.08) 100%); border-top: 2px solid rgba(240,192,64,0.3); border-bottom: 2px solid rgba(240,192,64,0.3); transition: top 0.15s ease-out; }
+
+body.dyslexia { font-family: 'OpenDyslexicRegular', 'OpenDyslexic', 'Comic Sans MS', cursive, sans-serif; letter-spacing: 0.05em; word-spacing: 0.1em; }
+body.dyslexia .verse { line-height: var(--dys-line-height, 2.2); font-size: var(--dys-font-size, 1.15em); }
+body.dyslexia .verse .w { padding: 2px 0; }
+body.dyslexia .verse .w .sn { font-size: 0.6em; }
+body.dyslexia .verse .w .en { font-size: 0.6em; }
+body.dyslexia-bg-cream { background: #fdf6e3 !important; color: #333 !important; }
+body.dyslexia-bg-sepia { background: #f5e6c8 !important; color: #3b2e1a !important; }
+body.dyslexia-bg-blue { background: #e8f0fe !important; color: #1a1a2e !important; }
+body.dyslexia-bg-green { background: #e6f5e6 !important; color: #1a2e1a !important; }
+body.dyslexia-bg-pink { background: #fce4ec !important; color: #2e1a2a !important; }
+body.dyslexia-bg-dark { background: #1a1a2e !important; color: #e0e0e0 !important; }
+body.dyslexia-bg-cream .dict-overlay { background: rgba(253,246,227,0.95); }
+body.dyslexia-bg-sepia .dict-overlay { background: rgba(245,230,200,0.95); }
+body.dyslexia-bg-blue .dict-overlay { background: rgba(232,240,254,0.95); }
+body.dyslexia-bg-green .dict-overlay { background: rgba(230,245,230,0.95); }
+body.dyslexia-bg-pink .dict-overlay { background: rgba(252,228,236,0.95); }
+body.dyslexia-bg-dark .dict-overlay { background: rgba(26,26,46,0.95); }
+body.dyslexia .verse:hover { background: rgba(240,192,64,0.2) !important; }
+body.dyslexia .verse.active { background: linear-gradient(135deg, rgba(240,192,64,0.3), rgba(240,160,40,0.45)) !important; border-left-color: #f0c040 !important; }
+body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-blue .verse, body.dyslexia-bg-green .verse, body.dyslexia-bg-pink .verse { border-bottom: 1px solid rgba(0,0,0,0.08); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#x271D; Holy Bible A.S</h1>
+  <div class="controls">
+    <select id="versionSelect" aria-label="Select Bible version"></select>
+    <select id="bookSelect" aria-label="Select book"></select>
+    <select id="chapterSelect" aria-label="Select chapter"></select>
+    <button id="loadBtn">Load Chapter</button>
+    <label><input type="checkbox" id="autoScroll" checked> Auto-Scroll</label>
+    <label><input type="checkbox" id="showStrongs"> Interlinear</label>
+    <label><input type="checkbox" id="parallelCb"> Parallel</label>
+    <label><input type="checkbox" id="timestampMode"> Set Timestamps</label>
+    <button id="resetTimestampsBtn">Reset Timestamps</button>
+    <button id="storageBtn" title="Save app data to a folder on disk (bookmarks, timestamps, position). Falls back to browser storage otherwise.">Storage: Browser</button>
+    <button id="bookmarkBtn" title="Save current spot as a bookmark">&#128278; Bookmark</button>
+    <select id="bookmarkSelect" aria-label="Jump to bookmark"><option value="">Bookmarks&hellip;</option></select>
+    <button id="deleteBookmarkBtn" title="Delete selected bookmark">&#128465;</button>
+    <button id="inspireBtn" title="Pick a random verse">&#10024; Inspire Me</button>
+    <button id="dyslexiaBtn" title="Toggle Dyslexia-friendly mode" style="font-weight:700;font-size:1rem;">Dy</button>
+    <button id="helpBtn" title="Keyboard shortcuts and help">? Help</button>
+  </div>
+</header>
+
+<div id="parallelBar" class="parallel-bar">
+  <span class="parallel-label">3-Way Reading</span>
+  <select id="par2Sel" aria-label="Second pane version"></select>
+  <select id="par3Sel" aria-label="Third pane version"></select>
+  <span class="parallel-hint">Pane 1 uses the main version dropdown above.</span>
+</div>
+
+<div class="audio-bar">
+  <button id="playBtn">&#9654;</button>
+  <input type="range" id="seekBar" min="0" max="1" step="0.001" value="0" aria-label="Seek audio position">
+  <span class="time" id="timeDisplay">0:00 / 0:00</span>
+  <div class="volume-wrap">
+    <span id="volIcon">&#128266;</span>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.3" aria-label="Adjust volume">
+    <span id="volPct" class="vol-pct">30%</span>
+  </div>
+  <span class="verse-info" id="currentVerseInfo">--</span>
+  <input type="file" id="audioFileInput" accept="audio/*" aria-label="Select an audio file">
+</div>
+
+<div class="tts-bar">
+  <button id="ttsPlayBtn" class="tts-btn">&#127911; Audiobook</button>
+  <button id="ttsStopBtn" class="tts-btn tts-stop">&#9632; Stop</button>
+  <label class="tts-label">Speed
+    <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1">
+    <span id="ttsSpeedVal">1x</span>
+  </label>
+  <select id="ttsVoice" aria-label="Select TTS voice"></select>
+  <label class="tts-label"><input type="checkbox" id="loopNT"> Repeat New Testament</label>
+  <label class="tts-label"><input type="checkbox" id="loopOT"> Repeat Old Testament</label>
+  <label class="tts-label"><input type="checkbox" id="loopWhole"> Repeat Whole Bible</label>
+  <span id="ttsStatus" class="tts-status"></span>
+</div>
+
+<div id="dyslexiaBar" class="dyslexia-bar">
+  <span class="dyslexia-label">Dyslexia Mode</span>
+  <div class="dyslexia-ctrl">
+    <label>Size</label>
+    <input type="range" id="dysFontSize" min="0.8" max="2" step="0.05" value="1.15" title="Font size">
+    <span id="dysFontSizeVal">1.15x</span>
+  </div>
+  <div class="dyslexia-ctrl">
+    <label>Spacing</label>
+    <input type="range" id="dysLetterSpacing" min="0" max="0.2" step="0.01" value="0.05" title="Letter spacing">
+    <span id="dysLetterSpacingVal">0.05</span>
+  </div>
+  <div class="dyslexia-ctrl">
+    <label>Lines</label>
+    <input type="range" id="dysLineHeight" min="1.5" max="4" step="0.1" value="2.2" title="Line height">
+    <span id="dysLineHeightVal">2.2</span>
+  </div>
+  <div class="dyslexia-ctrl">
+    <label>Background</label>
+    <select id="dysBg" title="Background color">
+      <option value="">Dark</option>
+      <option value="cream">Cream</option>
+      <option value="sepia">Sepia</option>
+      <option value="blue">Light Blue</option>
+      <option value="green">Light Green</option>
+      <option value="pink">Pink</option>
+      <option value="dark">Dark Blue</option>
+    </select>
+  </div>
+  <div class="dyslexia-ctrl">
+    <button id="dysRulerBtn" title="Toggle reading ruler guide">Ruler</button>
+  </div>
+  <div class="dyslexia-ctrl">
+    <button id="dysResetBtn" title="Reset to defaults">Reset</button>
+  </div>
+</div>
+
+<div id="readingRuler" class="reading-ruler"><div class="reading-ruler-line"></div></div>
+
+<div id="chapter-title">Select a chapter to begin</div>
+<div id="status">Select a chapter to load Bible text.</div>
+<div id="verses-container"></div>
+
+<script src="data/nestle1904.js"></script>
+<script src="data/strongs.js"></script>
+<script src="data/lexicon.js"></script>
+<script src="data/interlinear.js"></script>
+<script>
+const NT_BOOKS = {
+  "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21,
+  "Acts": 28,
+  "Romans": 16, "1 Corinthians": 16, "2 Corinthians": 13,
+  "Galatians": 6, "Ephesians": 6, "Philippians": 4, "Colossians": 4,
+  "1 Thessalonians": 5, "2 Thessalonians": 3,
+  "1 Timothy": 6, "2 Timothy": 4, "Titus": 3, "Philemon": 1,
+  "Hebrews": 13, "James": 5,
+  "1 Peter": 5, "2 Peter": 3,
+  "1 John": 5, "2 John": 1, "3 John": 1, "Jude": 1,
+  "Revelation": 22
+};
+
+const OT_BOOKS = {
+  "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36,
+  "Deuteronomy": 34, "Joshua": 24, "Judges": 21, "Ruth": 4,
+  "1 Samuel": 31, "2 Samuel": 24, "1 Kings": 22, "2 Kings": 25,
+  "1 Chronicles": 29, "2 Chronicles": 36, "Ezra": 10, "Nehemiah": 13,
+  "Esther": 10, "Job": 42, "Psalms": 150, "Proverbs": 31,
+  "Ecclesiastes": 12, "Song of Solomon": 8,
+  "Isaiah": 66, "Jeremiah": 52, "Lamentations": 5, "Ezekiel": 48,
+  "Daniel": 12, "Hosea": 14, "Joel": 3, "Amos": 9,
+  "Obadiah": 1, "Jonah": 4, "Micah": 7, "Nahum": 3,
+  "Habakkuk": 3, "Zephaniah": 3, "Haggai": 2, "Zechariah": 14,
+  "Malachi": 4
+};
+
+const APOC_BOOKS = {
+  "Tobit": 14, "Judith": 16, "Esther (Greek)": 10,
+  "Wisdom of Solomon": 19, "Ecclesiasticus (Sira)": 51,
+  "Baruch": 5, "Epistle of Jeremiah": 1,
+  "Prayer of Azariah": 1, "Susanna": 1, "Bel and the Dragon": 1,
+  "Prayer of Manasseh": 1, "1 Maccabees": 16, "2 Maccabees": 15,
+  "1 Esdras": 9, "2 Esdras": 16
+};
+
+const AR_BOOKS = {
+  "\ufe97\ufedc\ufeee\ufef3\ufee6": 50,
+  "\ufe8d\ufedf\ufea8\ufeae\ufeed\ufe9d": 40,
+  "\ufe8d\ufedf\ufefc\ufeed\ufef3\ufef2": 27,
+  "\ufe8d\ufedf\ufecc\ufeaa\ufea9": 36,
+  "\ufe8d\ufedf\ufe98\ufe9c\ufee8\ufef4\ufe94": 34,
+  "\ufef3\ufeb8\ufeee\ufec9": 24,
+  "\ufe8d\ufedf\ufed8\ufec0\ufe8e\ufe93": 21,
+  "\ufead\ufe8d\ufecb\ufeee\ufe99": 4,
+  "\ufebb\ufee4\ufeee\ufe8b\ufef4\ufede \ufe8d\ufef7\ufeed\ufedd": 31,
+  "\ufebb\ufee4\ufeee\ufe8b\ufef4\ufede \ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef2": 24,
+  "\ufe8d\ufedf\ufee4\ufee0\ufeee\ufed9 \ufe8d\ufef7\ufeed": 22,
+  "\ufe8d\ufedf\ufee4\ufee0\ufeee\ufed9 \ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef2": 25,
+  "\ufe83\ufea7\ufe92\ufe8e\ufead \ufe8d\ufef7\ufef3\ufe8e\ufee1 \ufe8d\ufef7": 29,
+  "\ufe83\ufea7\ufe92\ufe8e\ufead \ufe8d\ufef7\ufef3\ufe8e\ufee1 \ufe8d\ufedf\ufe9c\ufe8e\ufee5": 36,
+  "\ufecb\ufeb0\ufead\ufe8d": 10,
+  "\ufee7\ufea4\ufee4\ufef4\ufe8e": 13,
+  "\ufe83\ufeb3\ufe98\ufef4\ufeae": 10,
+  "\ufe83\ufef3\ufeee\ufe8f": 42,
+  "\ufe8d\ufedf\ufee4\ufeb0\ufe8d\ufee3\ufef4\ufeae": 150,
+  "\ufe83\ufee3\ufe9c\ufe8e\ufedd": 31,
+  "\ufe8d\ufedf\ufea0\ufe8e\ufee3\ufecc\ufe94": 12,
+  "\ufee7\ufeb8\ufef4\ufeaa \ufe8d\ufef7\ufee7\ufeb8\ufe8e": 8,
+  "\ufe83\ufeb7\ufecc\ufef4\ufe8e\u0621": 66,
+  "\ufe83\ufead\ufee3\ufef4\ufe8e\u0621": 52,
+  "\ufee3\ufeae\ufe8d\ufe9b\ufef2 \ufe87\ufead\ufee3\ufef4\ufe8e": 5,
+  "\ufea3\ufeb0\ufed7\ufef4\ufe8e\ufedd": 48,
+  "\ufea9\ufe8d\ufee7\ufef4\ufe8e\ufedd": 12,
+  "\ufeeb\ufeee\ufeb7\ufeca": 14,
+  "\ufef3\ufeee\ufe8b\ufef4\ufede": 3,
+  "\ufecb\ufe8e\ufee3\ufeee\ufeb1": 9,
+  "\ufecb\ufeee\ufe91\ufeaa\ufef3\ufe8e": 1,
+  "\ufef3\ufeee\ufee7\ufe8e\ufee5": 4,
+  "\ufee3\ufef4\ufea8\ufe8e": 7,
+  "\ufee7\ufe8e\ufea3\ufeee\ufee1": 3,
+  "\ufea3\ufe92\ufed8\ufeee\ufed5": 3,
+  "\ufebb\ufed4\ufee8\ufef4\ufe8e": 3,
+  "\ufea3\ufea0\ufef2": 2,
+  "\ufeaf\ufedb\ufeae\ufef3\ufe8e": 14,
+  "\ufee3\ufefc\ufea5": 4,
+  "\ufee3\ufe98\ufef0": 28,
+  "\ufee3\ufeae\ufed7\ufeb2": 16,
+  "\ufedf\ufeee\ufed7\ufe8e": 24,
+  "\ufef3\ufeee\ufea3\ufee8\ufe8e": 21,
+  "\ufe8d\ufecb\ufee4\ufe8e\ufedd \ufe8d\ufedf\ufeae\ufeb3\ufede": 28,
+  "\ufead\ufeed\ufee3\ufef4\ufe94": 16,
+  "\ufedb\ufeee\ufead\ufee7\ufe9c\ufeee\ufeb1 \ufe8d\ufefb\ufeed\ufedd": 16,
+  "\ufedb\ufeee\ufead\ufee7\ufe9c\ufeee\ufeb1 \ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef4\ufe94": 13,
+  "\ufecf\ufefc\ufec3\ufef2": 6,
+  "\ufe83\ufed3\ufeb4\ufeb2": 6,
+  "\ufed3\ufef4\ufee0\ufef4\ufe92\ufef2": 4,
+  "\ufedb\ufeee\ufedf\ufeee\ufeb3\ufef2": 4,
+  "\ufe8d\ufefb\ufeed\ufedd \ufe97\ufeb4\ufe8e\ufedf\ufeee\ufee7\ufef4\ufedc\ufef2": 5,
+  "\ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef4\ufe94 \ufe97\ufeb4\ufe8e\ufedf\ufeee\ufee7\ufef4\ufedc\ufef2": 3,
+  "\ufe8d\ufefb\ufeed\ufedd \ufe97\ufef4\ufee4\ufeee\ufe9b\ufe8e\ufeed\ufeb1": 6,
+  "\ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef4\ufe94 \ufe97\ufef4\ufee4\ufeee\ufe9b\ufe8e\ufeed\ufeb1": 4,
+  "\ufe97\ufef4\ufec4\ufeb2": 3,
+  "\ufed3\ufee0\ufef4\ufee4\ufeee\ufee5": 1,
+  "\ufe8d\ufedf\ufecc\ufe92\ufeae\ufe8d\ufee7\ufef4\ufef4\ufee6": 13,
+  "\ufef3\ufecc\ufed8\ufeee\ufe8f": 5,
+  "\ufe91\ufec4\ufeae\ufeb1 \ufe8d\ufefb\ufeed\ufedd": 5,
+  "\ufe91\ufec4\ufeae\ufeb1 \ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef4\ufe94": 3,
+  "\ufef3\ufeee\ufea3\ufee8\ufe8e \ufe8d\ufefb\ufeed\ufedd": 5,
+  "\ufef3\ufeee\ufea3\ufee8\ufe8e \ufe8d\ufedf\ufe9c\ufe8e\ufee7\ufef4\ufe94": 1,
+  "\ufef3\ufeee\ufea3\ufee8\ufe8e \ufe8d\ufedf\ufe9c\ufe8e\ufedf\ufe9c\ufe94": 1,
+  "\ufef3\ufeec\ufeee\ufeab\ufe8d": 1,
+  "\ufef3\ufeee\ufea3\ufee8\ufe8e \ufead\ufe85\ufef3\ufe8e": 22
+};
+
+function getBookList() {
+  const v = versionSelect.value;
+  if (v === 'Arabic') return AR_BOOKS;
+  if (v === 'LXX') return OT_BOOKS;
+  if (v === 'Apocrypha') return APOC_BOOKS;
+  if (v === 'WLCa' || v === 'WLC' || v === 'WLCC' || v === 'HAC') return OT_BOOKS;
+  if (v === 'DHNT') return NT_BOOKS;
+  if (v === 'TR' || v === 'NTGT') return NT_BOOKS;
+  if (v === 'ain_ABT') { const m = {}; Object.assign(m, {'Psalms': 150}, NT_BOOKS); return m; }
+  const all = {};
+  Object.assign(all, OT_BOOKS, NT_BOOKS);
+  return all;
+}
+
+// AR_BOOKS is ordered OT-then-NT, so index 39 is Matthew; map English names.
+const AR_ENGLISH_TO_ARABIC = (() => {
+  const map = {};
+  const arKeys = Object.keys(AR_BOOKS);
+  Object.keys(OT_BOOKS).forEach((b, i) => { map[b] = arKeys[i]; });
+  Object.keys(NT_BOOKS).forEach((b, i) => { map[b] = arKeys[39 + i]; });
+  return map;
+})();
+
+function bookNameForVersion(version, book) {
+  if (version === 'Arabic') return AR_ENGLISH_TO_ARABIC[book] || book;
+  return book;
+}
+
+const VERSIONS = {
+  "SBLGNT": {
+    label: "SBLGNT (2010)",
+    lang: "grc",
+    localVar: "_DATA_nestle1904",
+    file: "nestle1904.js"
+  },
+  "Byzantine": {
+    label: "Byzantine Majority Text (2005)",
+    lang: "grc",
+    localVar: "_DATA_byzantine2005",
+    file: "byzantine2005.js"
+  },
+  "Orthodox": {
+    label: "Greek Orthodox Church (1904)",
+    lang: "grc",
+    localVar: "_DATA_greekOrthodox1904",
+    file: "_DATA_greekOrthodox1904.js"
+  },
+  "ScrivenerTR": {
+    label: "Scrivener's Textus Receptus (1894)",
+    lang: "grc",
+    localVar: "_DATA_scrTR1894",
+    file: "_DATA_scrTR1894.js"
+  },
+  "StephanusTR": {
+    label: "Stephanus Textus Receptus (1550)",
+    lang: "grc",
+    localVar: "_DATA_stepTR1550",
+    file: "_DATA_stepTR1550.js"
+  },
+  "Tischendorf": {
+    label: "Tischendorf 8th Edition (1872)",
+    lang: "grc",
+    localVar: "_DATA_tischendorf8",
+    file: "_DATA_tischendorf8.js"
+  },
+  "WH": {
+    label: "Westcott & Hort (1881)",
+    lang: "grc",
+    localVar: "_DATA_wh1881",
+    file: "_DATA_wh1881.js"
+  },
+  "LXX": {
+    label: "Septuagint Swete (1887)",
+    lang: "grc",
+    localVar: "_DATA_septuagint",
+    file: "_DATA_septuagint.js"
+  },
+  "Arabic": {
+    label: "Smith & Van Dyke Arabic (1865)",
+    lang: "ar",
+    localVar: "_DATA_arabic_svd",
+    file: "_DATA_arabic_svd.js"
+  },
+  "NHEB": {
+    label: "New Heart English Bible (2010)",
+    lang: "en",
+    localVar: "_DATA_nheb",
+    file: "nheb.js"
+  },
+  "Apocrypha": {
+    label: "Apocrypha Deuterocanonical",
+    lang: "en",
+    localVar: "_DATA_apocrypha",
+    file: "apocrypha.js"
+  },
+  "YLT": {
+    label: "Young's Literal Translation (1862)",
+    lang: "en",
+    localVar: "_DATA_ylt",
+    file: "ylt.js"
+  },
+  "KJV": {
+    label: "King James Version (1611)",
+    lang: "en",
+    localVar: "_DATA_kjv",
+    file: "kjv.js"
+  },
+  "NKJV": {
+    label: "New King James Version (1982)",
+    lang: "en",
+    localVar: "_DATA_nkjv",
+    file: "nkjv.js"
+  },
+  "NIV": {
+    label: "New International Version (2011)",
+    lang: "en",
+    localVar: "_DATA_niv",
+    file: "niv.js"
+  },
+  "NIV1984": {
+    label: "New International Version (1984)",
+    lang: "en",
+    localVar: "_DATA_niv1984",
+    file: "niv1984.js"
+  },
+  "TNIV": {
+    label: "Today's New International Version (2005)",
+    lang: "en",
+    localVar: "_DATA_tniv",
+    file: "tniv.js"
+  },
+  "NIrV": {
+    label: "New International Reader's Version (1998)",
+    lang: "en",
+    localVar: "_DATA_nirv",
+    file: "nirv.js"
+  },
+  "ESV": {
+    label: "English Standard Version (2016)",
+    lang: "en",
+    localVar: "_DATA_esv",
+    file: "esv.js"
+  },
+  "NLT": {
+    label: "New Living Translation (2015)",
+    lang: "en",
+    localVar: "_DATA_nlt",
+    file: "nlt.js"
+  },
+  "CSB": {
+    label: "Christian Standard Bible (2017)",
+    lang: "en",
+    localVar: "_DATA_csb",
+    file: "csb.js"
+  },
+  "CEB": {
+    label: "Common English Bible (2011)",
+    lang: "en",
+    localVar: "_DATA_ceb",
+    file: "ceb.js"
+  },
+  "ERV": {
+    label: "Easy-to-Read Version (2006)",
+    lang: "en",
+    localVar: "_DATA_erv",
+    file: "erv.js"
+  },
+  "GNT": {
+    label: "Good News Translation (2001)",
+    lang: "en",
+    localVar: "_DATA_gnt",
+    file: "gnt.js"
+  },
+  "WEB": {
+    label: "World English Bible",
+    lang: "en",
+    localVar: "_DATA_web",
+    file: "web.js"
+  },
+  "BSB": {
+    label: "Berean Standard Bible (2016)",
+    lang: "en",
+    localVar: "_DATA_bsb",
+    file: "bsb.js"
+  },
+  "NET": {
+    label: "New English Translation (2007)",
+    lang: "en",
+    localVar: "_DATA_net",
+    file: "net.js"
+  },
+  "NASB": {
+    label: "New American Standard Bible (1995)",
+    lang: "en",
+    localVar: "_DATA_nasb",
+    file: "nasb.js"
+  },
+  "GNV": {
+    label: "Geneva Bible (1599)",
+    lang: "en",
+    localVar: "_DATA_gnv",
+    file: "gnv.js"
+  },
+  "ASV": {
+    label: "American Standard Version (1901)",
+    lang: "en",
+    localVar: "_DATA_asv",
+    file: "asv.js"
+  },
+  "LSV": {
+    label: "Literal Standard Version (2020)",
+    lang: "en",
+    localVar: "_DATA_lsv",
+    file: "lsv.js"
+  },
+  "MEV": {
+    label: "Modern English Version (2014)",
+    lang: "en",
+    localVar: "_DATA_mev",
+    file: "mev.js"
+  },
+  "CJB": {
+    label: "Complete Jewish Bible (1998)",
+    lang: "en",
+    localVar: "_DATA_cjb",
+    file: "cjb.js"
+  },
+  "DRB": {
+    label: "Douay Rheims Bible (1582)",
+    lang: "en",
+    localVar: "_DATA_drb",
+    file: "drb.js"
+  },
+  "RSV": {
+    label: "Revised Standard Version (1952)",
+    lang: "en",
+    localVar: "_DATA_rsv",
+    file: "rsv.js"
+  },
+  "AMP": {
+    label: "Amplified Bible (2015)",
+    lang: "en",
+    localVar: "_DATA_amp",
+    file: "amp.js"
+  },
+  "CEVD": {
+    label: "Contemporary English Version (2006)",
+    lang: "en",
+    localVar: "_DATA_cevd",
+    file: "cevd.js"
+  },
+  "TS2009": {
+    label: "The Scriptures (2009)",
+    lang: "en",
+    localVar: "_DATA_ts2009",
+    file: "ts2009.js"
+  },
+  "LXXE": {
+    label: "English Septuagint (1851)",
+    lang: "en",
+    localVar: "_DATA_lxxe",
+    file: "lxxe.js"
+  },
+  "TLV": {
+    label: "Tree of Life Version",
+    lang: "en",
+    localVar: "_DATA_tlv",
+    file: "tlv.js"
+  },
+  "LSB": {
+    label: "Legacy Standard Bible",
+    lang: "en",
+    localVar: "_DATA_lsb",
+    file: "lsb.js"
+  },
+  "NRSVCE": {
+    label: "New Revised Standard Version Catholic Edition (1993)",
+    lang: "en",
+    localVar: "_DATA_nrsvce",
+    file: "nrsvce.js"
+  },
+  "NJB": {
+    label: "New Jerusalem Bible (1985)",
+    lang: "en",
+    localVar: "_DATA_njb",
+    file: "njb.js"
+  },
+  "SPE": {
+    label: "Samaritan Pentateuch English (2013)",
+    lang: "en",
+    localVar: "_DATA_spe",
+    file: "spe.js"
+  },
+  "LBP": {
+    label: "Aramaic Peshitta Lamsa (1933)",
+    lang: "en",
+    localVar: "_DATA_lbp",
+    file: "lbp.js"
+  },
+  "RSV2CE": {
+    label: "Revised Standard Version Catholic Edition",
+    lang: "en",
+    localVar: "_DATA_rsv2ce",
+    file: "rsv2ce.js"
+  },
+  "NABRE": {
+    label: "New American Bible Revised Edition",
+    lang: "en",
+    localVar: "_DATA_nabre",
+    file: "nabre.js"
+  },
+  "AUV": {
+    label: "An Understandable Version (1995)",
+    lang: "en",
+    localVar: "_DATA_auv",
+    file: "auv.js"
+  },
+  "ISV": {
+    label: "International Standard Version (2011)",
+    lang: "en",
+    localVar: "_DATA_isv",
+    file: "isv.js"
+  },
+  "NLV": {
+    label: "New Life Version (1969)",
+    lang: "en",
+    localVar: "_DATA_nlv",
+    file: "nlv.js"
+  },
+  "WPNT": {
+    label: "Wilbur Pickering's New Testament",
+    lang: "en",
+    localVar: "_DATA_wpnt",
+    file: "wpnt.js"
+  },
+  "NIVUK": {
+    label: "New International Version UK (2011)",
+    lang: "en",
+    localVar: "_DATA_nivuk",
+    file: "nivuk.js"
+  },
+  "NAV": {
+    label: "كتاب الحياة (Book of Life)",
+    lang: "ar",
+    localVar: "_DATA_nav",
+    file: "nav.js"
+  },
+  "ElzevirTR": {
+    label: "Elzevir Textus Receptus (1624)",
+    lang: "grc",
+    localVar: "_DATA_elzevirTR",
+    file: "elzevirTR.js"
+  },
+  "NTGT": {
+    label: "Greek NT Tischendorf 8th Ed.",
+    lang: "grc",
+    localVar: "_DATA_ntgt",
+    file: "ntgt.js"
+  },
+  "WLCa": {
+    label: "Westminster Leningrad Codex (vowels+accents+Strongs)",
+    lang: "he",
+    localVar: "_DATA_wlca",
+    file: "wlca.js"
+  },
+  "WLC": {
+    label: "Westminster Leningrad Codex (vowels)",
+    lang: "he",
+    localVar: "_DATA_wlc",
+    file: "wlc.js"
+  },
+  "WLCC": {
+    label: "Westminster Leningrad Codex (consonants)",
+    lang: "he",
+    localVar: "_DATA_wlcc",
+    file: "wlcc.js"
+  },
+  "HAC": {
+    label: "Tanah Aleppo Codex",
+    lang: "he",
+    localVar: "_DATA_hac",
+    file: "hac.js"
+  },
+  "DHNT": {
+    label: "Delitzsch's Hebrew New Testament (1877)",
+    lang: "he",
+    localVar: "_DATA_dhnt",
+    file: "dhnt.js"
+  },
+  "ain_ABT": {
+    label: "Assyrian Neo-Aramaic NT+Psalms",
+    lang: "aii",
+    localVar: "_DATA_ain_ABT",
+    file: "ain_ABT.js"
+  },
+  "MLV": {
+    label: "Modern Literal Version (2026)",
+    lang: "en",
+    localVar: "_DATA_MLV",
+    file: "mlv.js"
+  }
+};
+
+const bookCache = {};
+
+function loadVersionDataFromVar(varName) {
+  const data = window[varName];
+  if (!data) return null;
+  return JSON.parse(JSON.stringify(data));
+}
+
+const _dataFileCache = {};
+function ensureVersionData(version) {
+  const cfg = VERSIONS[version];
+  if (!cfg) return Promise.resolve(false);
+  if (window[cfg.localVar]) return Promise.resolve(true);
+  if (_dataFileCache[cfg.localVar]) return _dataFileCache[cfg.localVar];
+  const p = new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = 'data/' + cfg.file;
+    s.onload = () => resolve(!!window[cfg.localVar]);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+  _dataFileCache[cfg.localVar] = p;
+  return p;
+}
+
+function extractBook(data, book) {
+  const chs = data[book];
+  if (!chs) return null;
+  const verseMap = {};
+  Object.keys(chs).forEach(ch => {
+    Object.keys(chs[ch]).forEach(vs => {
+      verseMap[ch + ':' + vs] = chs[ch][vs];
+    });
+  });
+  return verseMap;
+}
+
+async function fetchBookData(version, book) {
+  const cfg = VERSIONS[version];
+  if (!bookCache[version]) bookCache[version] = {};
+  if (!bookCache[version][book]) {
+    await ensureVersionData(version);
+    const data = loadVersionDataFromVar(cfg.localVar);
+    if (!data) {
+      throw new Error(`${cfg.label} data not loaded`);
+    }
+    const verseMap = extractBook(data, book);
+    if (!verseMap) {
+      throw new Error(`${book} not found in ${cfg.label}`);
+    }
+    bookCache[version][book] = verseMap;
+  }
+  return bookCache[version][book];
+}
+
+async function fetchChapterForVersion(version, book, chapter) {
+  const verseMap = await fetchBookData(version, book);
+  const verses = [];
+  for (let vs = 1; vs <= 250; vs++) {
+    const key = chapter + ':' + vs;
+    if (!verseMap[key]) break;
+    verses.push(verseMap[key]);
+  }
+  return verses;
+}
+
+async function fetchChapter(book, chapter) {
+  const version = versionSelect.value;
+  const verses = await fetchChapterForVersion(version, book, chapter);
+  statusEl.textContent = `${verses.length} verses (${VERSIONS[version].label}).`;
+  return verses;
+}
+
+// State
+let currentBook = "Matthew";
+let currentChapter = 1;
+let verses = [];
+let parallelData = null;
+let timestamps = [];
+let currentVerseIndex = -1;
+let isPlaying = false;
+let audio = new Audio();
+let rafId = null;
+
+const $ = id => document.getElementById(id);
+const versionSelect = $('versionSelect');
+const bookSelect = $('bookSelect');
+const chapterSelect = $('chapterSelect');
+const versesContainer = $('verses-container');
+const chapterTitle = $('chapter-title');
+const statusEl = $('status');
+const playBtn = $('playBtn');
+const seekBar = $('seekBar');
+const timeDisplay = $('timeDisplay');
+const volumeSlider = $('volumeSlider');
+const volIcon = $('volIcon');
+const volPct = $('volPct');
+const currentVerseInfo = $('currentVerseInfo');
+const audioFileInput = $('audioFileInput');
+const bookmarkBtn = $('bookmarkBtn');
+const bookmarkSelect = $('bookmarkSelect');
+const deleteBookmarkBtn = $('deleteBookmarkBtn');
+const autoScrollCb = $('autoScroll');
+autoScrollCb.onchange = () => { userScrolledAway = false; };
+const showStrongsCb = $('showStrongs');
+const timestampModeCb = $('timestampMode');
+const parallelCb = $('parallelCb');
+const parallelBar = $('parallelBar');
+const par2Sel = $('par2Sel');
+const par3Sel = $('par3Sel');
+
+// --- Save state / bookmarks ---
+// Primary storage is a user-picked folder (File System Access API) holding a
+// single JSON file. When no folder is connected, falls back to localStorage.
+// localStorage is always kept as a mirror so nothing is lost between sessions.
+const LS_LAST_STATE = 'kgnt_lastState';
+const LS_BOOKMARKS = 'kgnt_bookmarks';
+const LS_TIMESTAMPS_PREFIX = 'kgnt_ts_';
+const LS_SAVED_AT = 'kgnt_savedAt';
+const STORAGE_FILE = 'bible-audio-sync-data.json';
+const IDB_NAME = 'bible-audio-sync-db';
+const IDB_STORE = 'handles';
+
+let storageFolder = null;      // FileSystemDirectoryHandle
+const storageCache = {};       // key -> raw string, mirror of the folder file
+let storageDirty = false;
+let storageWriteTimer = null;
+
+function tsKey(version, book, chapter) {
+  return LS_TIMESTAMPS_PREFIX + version + '|' + book + '|' + chapter;
+}
+
+function folderStorageActive() { return !!storageFolder; }
+
+function rawLocalGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function rawLocalSet(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+function rawLocalRemove(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+function safeGet(key) {
+  if (folderStorageActive() && storageCache[key] !== undefined) return storageCache[key];
+  return rawLocalGet(key);
+}
+function safeSet(key, val) {
+  rawLocalSet(key, val);
+  rawLocalSet(LS_SAVED_AT, String(Date.now()));
+  if (folderStorageActive()) {
+    storageCache[key] = val;
+    storageCache[LS_SAVED_AT] = String(Date.now());
+    folderFlushSoon();
+  }
+}
+function safeRemove(key) {
+  rawLocalRemove(key);
+  rawLocalSet(LS_SAVED_AT, String(Date.now()));
+  if (folderStorageActive()) {
+    delete storageCache[key];
+    storageCache[LS_SAVED_AT] = String(Date.now());
+    folderFlushSoon();
+  }
+}
+
+async function folderFlush() {
+  if (!folderStorageActive() || !storageDirty) return;
+  storageDirty = false;
+  clearTimeout(storageWriteTimer);
+  try {
+    const fh = await storageFolder.getFileHandle(STORAGE_FILE, { create: true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(storageCache));
+    await w.close();
+  } catch (e) {}
+}
+
+function folderFlushSoon() {
+  if (!folderStorageActive()) return;
+  storageDirty = true;
+  clearTimeout(storageWriteTimer);
+  storageWriteTimer = setTimeout(folderFlush, 300);
+}
+
+function copyLocalToCache() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('kgnt_') === 0) storageCache[k] = localStorage.getItem(k);
+    }
+  } catch (e) {}
+}
+
+function copyMissingLocalToCache() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('kgnt_') === 0 && storageCache[k] === undefined) {
+        storageCache[k] = localStorage.getItem(k);
+      }
+    }
+  } catch (e) {}
+}
+
+async function connectFolderHandle(handle) {
+  storageFolder = handle;
+  Object.keys(storageCache).forEach(k => delete storageCache[k]);
+  let hasFile = false;
+  try {
+    const fh = await storageFolder.getFileHandle(STORAGE_FILE);
+    const file = await fh.getFile();
+    const text = await file.text();
+    if (text) {
+      Object.assign(storageCache, JSON.parse(text));
+      hasFile = true;
+    }
+  } catch (e) { hasFile = false; }
+  const localSavedAt = Number(rawLocalGet(LS_SAVED_AT) || 0);
+  const folderSavedAt = Number(storageCache[LS_SAVED_AT] || 0);
+  if (!hasFile || localSavedAt >= folderSavedAt) {
+    copyLocalToCache();
+    storageCache[LS_SAVED_AT] = String(localSavedAt);
+  } else {
+    copyMissingLocalToCache();
+  }
+  storageDirty = true;
+  await folderFlush();
+  updateStorageUI();
+}
+
+// IndexedDB helpers (to persist the folder handle across sessions)
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) { reject(new Error('no IndexedDB')); return; }
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(IDB_STORE)) req.result.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(key, val) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(val, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const rq = tx.objectStore(IDB_STORE).get(key);
+    rq.onsuccess = () => resolve(rq.result || null);
+    rq.onerror = () => reject(rq.error);
+  });
+}
+async function idbDel(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function tryAutoReconnect() {
+  if (!('showDirectoryPicker' in window)) return;
+  try {
+    const stored = await idbGet('dirHandle');
+    if (!stored) return;
+    const perm = await stored.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') await connectFolderHandle(stored);
+  } catch (e) {}
+}
+
+function updateStorageUI() {
+  const btn = document.getElementById('storageBtn');
+  if (!btn) return;
+  if (folderStorageActive()) {
+    btn.textContent = 'Storage: ' + storageFolder.name;
+    btn.classList.add('active');
+  } else {
+    btn.textContent = 'Storage: Browser';
+    btn.classList.remove('active');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('storageBtn');
+  if (!btn) return;
+  btn.onclick = async () => {
+    if (folderStorageActive()) {
+      if (!confirm('Switch back to browser storage? Files already saved in the folder will be kept.')) return;
+      storageFolder = null;
+      try { await idbDel('dirHandle'); } catch (e) {}
+      updateStorageUI();
+      statusEl.textContent = 'Storage switched to browser.';
+      return;
+    }
+    if (!('showDirectoryPicker' in window)) {
+      statusEl.textContent = 'Folder storage needs Chrome or Edge.';
+      return;
+    }
+    try {
+      let handle = null;
+      try {
+        const stored = await idbGet('dirHandle');
+        if (stored) {
+          const perm = await stored.queryPermission({ mode: 'readwrite' });
+          if (perm !== 'granted') {
+            const req = await stored.requestPermission({ mode: 'readwrite' });
+            if (req === 'granted') handle = stored;
+          } else {
+            handle = stored;
+          }
+        }
+      } catch (e) { handle = null; }
+      if (!handle) {
+        handle = await window.showDirectoryPicker({ id: 'bible-storage' });
+      }
+      await idbPut('dirHandle', handle);
+      await connectFolderHandle(handle);
+      applyResumedState();
+      statusEl.textContent = 'Connected to folder: ' + handle.name + '. Data saved to ' + STORAGE_FILE + '.';
+      await loadChapter();
+    } catch (e) {
+      if (e && e.name === 'AbortError') statusEl.textContent = 'Folder selection cancelled.';
+      else statusEl.textContent = 'Could not connect storage folder.';
+    }
+  };
+});
+
+window.addEventListener('pagehide', () => {
+  if (storageDirty && folderStorageActive()) folderFlush();
+});
+
+function saveLastState() {
+  safeSet(LS_LAST_STATE, JSON.stringify({
+    version: versionSelect.value,
+    book: currentBook,
+    chapter: currentChapter,
+    verseIndex: currentVerseIndex,
+    strongs: showStrongsCb.checked,
+    parallel: parallelCb.checked,
+    par2: parallelCb.checked ? par2Sel.value : null,
+    par3: parallelCb.checked ? par3Sel.value : null
+  }));
+}
+
+function loadLastState() {
+  const raw = safeGet(LS_LAST_STATE);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+function saveChapterTimestamps() {
+  if (timestamps.some(t => t != null)) {
+    safeSet(tsKey(versionSelect.value, currentBook, currentChapter), JSON.stringify(timestamps));
+  } else {
+    safeRemove(tsKey(versionSelect.value, currentBook, currentChapter));
+  }
+}
+
+function loadChapterTimestamps() {
+  const raw = safeGet(tsKey(versionSelect.value, currentBook, currentChapter));
+  if (!raw) return null;
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length === verses.length) return arr;
+  } catch (e) {}
+  return null;
+}
+
+function getBookmarks() {
+  const raw = safeGet(LS_BOOKMARKS);
+  if (!raw) return [];
+  try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
+}
+
+function saveBookmarksList(list) {
+  safeSet(LS_BOOKMARKS, JSON.stringify(list));
+}
+
+function renderBookmarkSelect() {
+  const list = getBookmarks();
+  const prevValue = bookmarkSelect.value;
+  bookmarkSelect.innerHTML = '';
+  bookmarkSelect.add(new Option('Bookmarks\u2026', ''));
+  list.forEach(bm => {
+    bookmarkSelect.add(new Option(bm.label, bm.id));
+  });
+  if (list.some(bm => bm.id === prevValue)) bookmarkSelect.value = prevValue;
+}
+
+bookmarkBtn.onclick = () => {
+  const defaultLabel = `${currentBook} ${currentChapter}:${currentVerseIndex >= 0 ? currentVerseIndex + 1 : 1} (${VERSIONS[versionSelect.value].label})`;
+  const label = prompt('Name this bookmark:', defaultLabel);
+  if (label === null) return;
+  const bm = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    label: label.trim() || defaultLabel,
+    version: versionSelect.value,
+    book: currentBook,
+    chapter: currentChapter,
+    verseIndex: currentVerseIndex >= 0 ? currentVerseIndex : 0,
+    audioTime: audio.src ? audio.currentTime : null
+  };
+  const list = getBookmarks();
+  list.push(bm);
+  saveBookmarksList(list);
+  renderBookmarkSelect();
+  bookmarkSelect.value = bm.id;
+  statusEl.textContent = `Bookmark saved: ${bm.label}`;
+};
+
+deleteBookmarkBtn.onclick = () => {
+  const id = bookmarkSelect.value;
+  if (!id) { statusEl.textContent = 'Select a bookmark to delete first.'; return; }
+  const list = getBookmarks();
+  const bm = list.find(b => b.id === id);
+  if (!bm) return;
+  if (!confirm(`Delete bookmark "${bm.label}"?`)) return;
+  saveBookmarksList(list.filter(b => b.id !== id));
+  renderBookmarkSelect();
+  statusEl.textContent = 'Bookmark deleted.';
+};
+
+bookmarkSelect.onchange = () => {
+  const id = bookmarkSelect.value;
+  if (!id) return;
+  const bm = getBookmarks().find(b => b.id === id);
+  if (!bm) return;
+  const pendingAudioTime = bm.audioTime;
+  if (VERSIONS[bm.version]) versionSelect.value = bm.version;
+  const bmLang = VERSIONS[bm.version] ? VERSIONS[bm.version].lang : 'en';
+  const bmRtl = bmLang === 'ar' || bmLang === 'he' || bmLang === 'aii';
+  document.body.classList.toggle('rtl', bmRtl);
+  document.documentElement.lang = bmRtl ? bmLang : 'en';
+  bookCache[versionSelect.value] = bookCache[versionSelect.value] || {};
+  bookSelect.innerHTML = '';
+  Object.keys(getBookList()).forEach(b => bookSelect.add(new Option(b, b)));
+  if (getBookList()[bm.book]) {
+    bookSelect.value = bm.book;
+  } else {
+    const first = Object.keys(getBookList())[0];
+    if (first) bookSelect.value = first;
+  }
+  populateChapters();
+  currentChapter = bm.chapter;
+  chapterSelect.value = bm.chapter;
+  loadVoices();
+  loadChapter().then(() => {
+    if (bm.verseIndex >= 0 && bm.verseIndex < verses.length) {
+      currentVerseIndex = bm.verseIndex;
+      highlightVerse(currentVerseIndex);
+      const el = document.querySelector(`.verse[data-index="${currentVerseIndex}"]`);
+      if (el) {
+        programmaticScroll = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scheduleProgrammaticScrollEnd();
+      }
+    }
+    if (pendingAudioTime != null && audio.src) {
+      audio.currentTime = pendingAudioTime;
+    }
+    statusEl.textContent = `Jumped to bookmark: ${bm.label}`;
+  });
+};
+
+$('inspireBtn').onclick = async () => {
+  const allVersions = Object.keys(VERSIONS);
+  if (!allVersions.length) { statusEl.textContent = 'No data loaded.'; return; }
+  const rv = allVersions[Math.floor(Math.random() * allVersions.length)];
+  await ensureVersionData(rv);
+  const data = loadVersionDataFromVar(VERSIONS[rv].localVar);
+  const books = Object.keys(data);
+  const randBook = books[Math.floor(Math.random() * books.length)];
+  const chapters = Object.keys(data[randBook]);
+  const randCh = chapters[Math.floor(Math.random() * chapters.length)];
+  const versesObj = data[randBook][randCh];
+  const vsKeys = Object.keys(versesObj);
+  const randVs = vsKeys[Math.floor(Math.random() * vsKeys.length)];
+  const text = versesObj[randVs];
+  statusEl.textContent = `${randBook} ${randCh}:${randVs} (${VERSIONS[rv].label}) — ${text}`;
+  versionSelect.value = rv;
+  bookSelect.innerHTML = '';
+  Object.keys(getBookList()).forEach(b => bookSelect.add(new Option(b, b)));
+  if (getBookList()[randBook]) bookSelect.value = randBook;
+  populateChapters();
+  currentChapter = Number(randCh);
+  chapterSelect.value = currentChapter;
+  loadChapter().then(() => {
+    const idx = Number(randVs) - 1;
+    if (idx >= 0 && idx < verses.length) {
+      currentVerseIndex = idx;
+      highlightVerse(idx);
+      const el = document.querySelector(`.verse[data-index="${idx}"]`);
+      if (el) {
+        programmaticScroll = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scheduleProgrammaticScrollEnd();
+      }
+    }
+  });
+};
+
+// Init versions and books
+Object.keys(VERSIONS).forEach(v => versionSelect.add(new Option(VERSIONS[v].label, v)));
+versionSelect.value = 'SBLGNT';
+populateParallelSelects();
+
+let resumedState = null;
+let resumeVerseIndex = -1;
+
+function applyResumedState() {
+  resumedState = loadLastState();
+  if (resumedState && VERSIONS[resumedState.version]) {
+    versionSelect.value = resumedState.version;
+  }
+  const initLang = VERSIONS[versionSelect.value] ? VERSIONS[versionSelect.value].lang : 'en';
+  const initRtl = initLang === 'ar' || initLang === 'he' || initLang === 'aii';
+  document.body.classList.toggle('rtl', initRtl);
+  document.documentElement.lang = initRtl ? initLang : 'en';
+
+  bookSelect.innerHTML = '';
+  Object.keys(getBookList()).forEach(b => bookSelect.add(new Option(b, b)));
+  bookSelect.value = currentBook;
+  if (resumedState && getBookList()[resumedState.book]) {
+    currentBook = resumedState.book;
+    bookSelect.value = currentBook;
+  } else {
+    const first = Object.keys(getBookList())[0];
+    if (first) { currentBook = first; bookSelect.value = first; }
+  }
+  if (resumedState && resumedState.chapter) {
+    currentChapter = resumedState.chapter;
+  }
+  if (resumedState && typeof resumedState.verseIndex === 'number') {
+    resumeVerseIndex = resumedState.verseIndex;
+  }
+  if (resumedState && typeof resumedState.strongs === 'boolean') {
+    showStrongsCb.checked = resumedState.strongs;
+  }
+  if (resumedState && typeof resumedState.parallel === 'boolean') {
+    parallelCb.checked = resumedState.parallel;
+  }
+  if (resumedState && resumedState.par2 && VERSIONS[resumedState.par2]) par2Sel.value = resumedState.par2;
+  if (resumedState && resumedState.par3 && VERSIONS[resumedState.par3]) par3Sel.value = resumedState.par3;
+  syncParallelUI();
+  populateChapters();
+  renderBookmarkSelect();
+  updateStorageUI();
+}
+
+versionSelect.onchange = () => {
+  bookCache[versionSelect.value] = {};
+  const lang = VERSIONS[versionSelect.value] ? VERSIONS[versionSelect.value].lang : 'en';
+  const isRtl = lang === 'ar' || lang === 'he' || lang === 'aii';
+  document.body.classList.toggle('rtl', isRtl);
+  document.documentElement.lang = isRtl ? lang : 'en';
+  const bl = getBookList();
+  const prevBook = bookSelect.value;
+  bookSelect.innerHTML = '';
+  Object.keys(bl).forEach(b => bookSelect.add(new Option(b, b)));
+  if (bl[prevBook]) {
+    bookSelect.value = prevBook;
+  } else {
+    const first = Object.keys(bl)[0];
+    if (first) bookSelect.value = first;
+    currentBook = bookSelect.value;
+  }
+  populateChapters();
+  loadVoices();
+  loadChapter();
+  autoLoadAudio();
+};
+
+function populateChapters() {
+  const book = bookSelect.value;
+  const maxChapters = getBookList()[book] || 0;
+  chapterSelect.innerHTML = '';
+  for (let i = 1; i <= maxChapters; i++) {
+    chapterSelect.add(new Option(i, i));
+  }
+  if (currentChapter > maxChapters) currentChapter = 1;
+  chapterSelect.value = currentChapter;
+}
+
+bookSelect.onchange = () => { populateChapters(); };
+chapterSelect.onchange = () => { currentChapter = Number(chapterSelect.value); };
+
+$('loadBtn').onclick = loadChapter;
+$('resetTimestampsBtn').onclick = resetTimestamps;
+
+async function loadChapter() {
+  currentBook = bookSelect.value;
+  currentChapter = Number(chapterSelect.value);
+  let data;
+  try {
+    data = await fetchChapter(currentBook, currentChapter);
+  } catch (err) {
+    versesContainer.innerHTML = `<div class="hint">Error: cannot load chapter - ${err.message}</div>`;
+    statusEl.textContent = `Error: ${err.message}`;
+    return;
+  }
+  if (!data || data.length === 0) {
+    versesContainer.innerHTML = '<div class="hint">Chapter loaded but no verses for this chapter in the source data.</div>';
+    statusEl.textContent = `0 verses for ${currentBook} ${currentChapter} in ${VERSIONS[versionSelect.value].label}.`;
+    return;
+  }
+  verses = data;
+  if (parallelEnabled()) {
+    parallelData = await Promise.all([
+      (async () => { try { return await fetchChapterForVersion(par2Sel.value, bookNameForVersion(par2Sel.value, currentBook), currentChapter); } catch (e) { return null; } })(),
+      (async () => { try { return await fetchChapterForVersion(par3Sel.value, bookNameForVersion(par3Sel.value, currentBook), currentChapter); } catch (e) { return null; } })()
+    ]);
+  } else {
+    parallelData = null;
+  }
+  const savedTs = loadChapterTimestamps();
+  timestamps = savedTs || new Array(verses.length).fill(null);
+  currentVerseIndex = -1;
+  renderVerses();
+  chapterTitle.textContent = `${currentBook} ${currentChapter}`;
+  statusEl.textContent = savedTs
+    ? `${verses.length} verses. Restored saved timestamps for this chapter.`
+    : `${verses.length} verses. Load an audio file, then set timestamps. Click each verse at the right time.`;
+  updateVerseInfo();
+  saveLastState();
+  autoLoadAudio();
+}
+
+function stripDiacritics(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function lookupStrongs(word) {
+  const key = stripDiacritics(word.replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
+  const sn = window._DATA_strongs && window._DATA_strongs[key];
+  if (!sn) return null;
+  return Array.isArray(sn) ? sn.join('/') : sn;
+}
+
+function interlinearEnabled() {
+  return showStrongsCb.checked && 'Matthew' in getBookList();
+}
+
+function parallelEnabled() {
+  return parallelCb.checked;
+}
+
+function syncParallelUI() {
+  parallelBar.style.display = parallelCb.checked ? 'flex' : 'none';
+  document.body.classList.toggle('parallel', parallelCb.checked);
+}
+
+function populateParallelSelects() {
+  par2Sel.innerHTML = '';
+  par3Sel.innerHTML = '';
+  Object.keys(VERSIONS).forEach(v => {
+    par2Sel.add(new Option(VERSIONS[v].label, v));
+    par3Sel.add(new Option(VERSIONS[v].label, v));
+  });
+  const mainV = versionSelect.value;
+  const prefs = ['NHEB', 'Arabic', 'NAV', 'SBLGNT', 'Byzantine', 'Orthodox'];
+  const avails = prefs.filter(p => p !== mainV);
+  par2Sel.value = avails[0] || '';
+  par3Sel.value = avails[1] || '';
+}
+
+parallelCb.onchange = () => {
+  syncParallelUI();
+  saveLastState();
+  loadChapter();
+};
+par2Sel.onchange = () => { saveLastState(); loadChapter(); };
+par3Sel.onchange = () => { saveLastState(); loadChapter(); };
+
+function interlinearEntry(word, verseNum, wordIdx, version) {
+  const data = window._DATA_interlinear;
+  if (!data) return null;
+  if ((version || versionSelect.value) === 'SBLGNT') {
+    const vpos = data.position[currentBook] && data.position[currentBook][String(currentChapter)] && data.position[currentBook][String(currentChapter)][String(verseNum)];
+    const entry = vpos && vpos[wordIdx];
+    if (entry) return entry;
+    return null;
+  }
+  const sn = lookupStrongs(word);
+  const key = stripDiacritics(word.replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
+  const gloss = data.glosses[key];
+  return gloss ? [sn, gloss] : null;
+}
+
+function verseMarkup(v, i, primary, version) {
+  const showSn = showStrongsCb.checked;
+  let wordIdx = 0;
+  const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
+    const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
+    wordIdx++;
+    const sn = (il && il[0]) ? il[0] : lookupStrongs(tok);
+    const snAttr = sn ? ` data-sn="${sn}"` : '';
+    let inner = tok;
+    if (il && (il[0] || il[1])) {
+      inner = `<span class="sn">${il[0] || sn || ''}</span>${tok}${il[1] ? `<span class="en">${il[1]}</span>` : ''}`;
+    } else if (showSn && sn) {
+      inner = `<span class="sn">${sn}</span>${tok}`;
+    }
+    return `<span class="w" data-i="${ti}"${snAttr}>${inner}</span>`;
+  })()).join('');
+  return `<div class="verse"${primary ? ` data-index="${i}"` : ''}>
+    <span class="num">${i+1}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
+  </div>`;
+}
+
+function renderVerses() {
+  if (parallelEnabled()) {
+    const panes = [];
+    const paneVersions = [versionSelect.value, par2Sel.value, par3Sel.value];
+    const paneData = [verses, parallelData && parallelData[0], parallelData && parallelData[1]];
+    for (let p = 0; p < 3; p++) {
+      const d = paneData[p];
+      const body = d && d.length
+        ? d.map((v, i) => verseMarkup(v, i, p === 0, paneVersions[p])).join('')
+        : `<div class="hint">This version has no verses for ${currentBook} ${currentChapter}.</div>`;
+      panes.push(`<div class="pane${p === 0 ? ' pane-primary' : ''}">
+        <div class="pane-title">${escHtml(VERSIONS[paneVersions[p]] ? VERSIONS[paneVersions[p]].label : paneVersions[p])}</div>
+        ${body}
+      </div>`);
+    }
+    versesContainer.innerHTML = panes.join('');
+    document.body.classList.add('parallel');
+  } else {
+    document.body.classList.remove('parallel');
+    versesContainer.innerHTML = verses.map((v, i) => verseMarkup(v, i, true, versionSelect.value)).join('');
+  }
+  versesContainer.querySelectorAll('.verse[data-index]').forEach(el => {
+    el.onclick = () => {
+      userScrolledAway = false;
+      if (timestampModeCb.checked) {
+        setTimestamp(Number(el.dataset.index));
+      }
+    };
+  });
+  if (currentVerseIndex >= 0) highlightVerse(currentVerseIndex);
+}
+
+let userScrolledAway = false;
+let programmaticScroll = false;
+let scrollResetTimer = null;
+
+function scheduleProgrammaticScrollEnd() {
+  clearTimeout(scrollResetTimer);
+  // Debounced: only clears once no scroll events have fired for a bit,
+  // so long smooth-scrolls (longer English verses covering more screen
+  // distance) don't get cut off mid-animation and misread as a user scroll.
+  scrollResetTimer = setTimeout(() => { programmaticScroll = false; }, 400);
+}
+
+function highlightVerse(idx) {
+  document.querySelectorAll('.verse').forEach(el => el.classList.remove('active'));
+  const el = document.querySelector(`.verse[data-index="${idx}"]`);
+  if (!el) return;
+  el.classList.add('active');
+  currentVerseInfo.textContent = `verse ${idx+1}`;
+  saveLastState();
+  if (autoScrollCb.checked && !userScrolledAway) {
+    programmaticScroll = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scheduleProgrammaticScrollEnd();
+  }
+}
+
+function isElementOutOfView(el) {
+  const rect = el.getBoundingClientRect();
+  return rect.bottom < 0 || rect.top > window.innerHeight;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // A smooth-scroll animation in flight when the tab is hidden gets
+    // paused/throttled by the browser, but this timer keeps running
+    // regardless. Clear it (without flipping programmaticScroll false)
+    // so the flag stays true for the whole time we're backgrounded.
+    clearTimeout(scrollResetTimer);
+  } else if (programmaticScroll) {
+    // Coming back visible mid-scroll: the paused animation is about to
+    // resume and fire its own scroll events. Give it a fresh window to
+    // finish before we start trusting scroll events as user-initiated
+    // again, otherwise the resumed animation gets misread as the user
+    // scrolling away and auto-scroll breaks.
+    scheduleProgrammaticScrollEnd();
+  }
+});
+
+window.addEventListener('scroll', () => {
+  if (programmaticScroll) {
+    // Still mid-animation (or a trailing event from it) - push the
+    // end-of-scroll timer back out instead of letting it expire early.
+    scheduleProgrammaticScrollEnd();
+    return;
+  }
+  const active = document.querySelector('.verse.active');
+  if (!active) return;
+  if (isElementOutOfView(active)) userScrolledAway = true;
+}, { passive: true });
+
+function updateVerseInfo() {
+  if (currentVerseIndex >= 0) currentVerseInfo.textContent = `verse ${currentVerseIndex+1}`;
+  else currentVerseInfo.textContent = '--';
+}
+
+function setTimestamp(idx) {
+  if (!audio.src) { statusEl.textContent = 'Load an audio file first.'; return; }
+  const currentTime = audio.currentTime;
+  timestamps[idx] = currentTime;
+  const badge = document.querySelector(`.verse[data-index="${idx}"] .timestamp-badge`);
+  if (badge) badge.textContent = formatTime(currentTime);
+  statusEl.textContent = `Timestamp set: verse ${idx+1} at ${formatTime(currentTime)}`;
+  saveChapterTimestamps();
+}
+
+function resetTimestamps() {
+  if (!confirm('Reset all timestamps for this chapter?')) return;
+  timestamps = new Array(verses.length).fill(null);
+  document.querySelectorAll('.timestamp-badge').forEach(el => el.textContent = '--:--');
+  currentVerseIndex = -1;
+  document.querySelectorAll('.verse').forEach(el => el.classList.remove('active'));
+  currentVerseInfo.textContent = '--';
+  statusEl.textContent = 'Timestamps reset.';
+  safeRemove(tsKey(versionSelect.value, currentBook, currentChapter));
+}
+
+// Audio handling
+audioFileInput.onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  audio.src = url;
+  audio.load();
+  setVolume(volumeSlider.value);
+  statusEl.textContent = `Loaded: ${file.name}`;
+};
+
+// Local audio loading for KJV, YLT, ASV (downloaded from LibriVox)
+const AUDIO_VERSIONS = ['KJV', 'YLT', 'ASV'];
+const AUDIO_BASE = 'audio';
+
+const LIBRIVOX_MAP = {
+  KJV: {
+    "Genesis": "bible_kjv_01_02_03_0908_librivox",
+    "Exodus": "bible_kjv_01_02_03_0908_librivox",
+    "Leviticus": "bible_kjv_01_02_03_0908_librivox",
+    "Numbers": "numbers_kjv_1108_librivox",
+    "Deuteronomy": "deuteronomy_kjv_1110_librivox",
+    "Joshua": "bible_kjv_joshua_jc_librivox",
+    "Judges": "bible_judges_kjv_jc_librivox",
+    "Ruth": "bible_ruth_tg_librivox",
+    "1 Samuel": "bible_1samuel_kjv_0903_librivox",
+    "2 Samuel": "bible_2samuel_kjv_jc_librivox",
+    "1 Kings": "bible_kjv_11_1king_0909_librivox",
+    "2 Kings": "bible_kjv_2kings_jc_librivox",
+    "1 Chronicles": "bible_kjv_14_2chronicles_1110_librivox",
+    "2 Chronicles": "2chronicleskjv_1403_librivox",
+    "Ezra": "ezra_kjv_sw_librivox",
+    "Nehemiah": "nehemiah_kjv_1110_librivox",
+    "Esther": "bible_kjv_17_esther_dr_1502_librivox",
+    "Job": "job_kjv_1012_librivox",
+    "Psalms": "psalms_kjv_1202_librivox",
+    "Proverbs": "proverbs_kjv_mp_librivox",
+    "Ecclesiastes": "ecclesiastes_kjv_1105_librivox",
+    "Song of Solomon": "songofsolomon_kjv_1009_librivox",
+    "Isaiah": "isaiah_kjv_1107_librivox",
+    "Jeremiah": "jeremiah_kjv_1201_librivox",
+    "Lamentations": "bible_kjv_25_lamentations_mp_0909_librivox",
+    "Ezekiel": "ezekiel_kjv_jr_librivox",
+    "Daniel": "daniel_kjv_1112_librivox",
+    "Hosea": "minor_prophets_tg_librivox",
+    "Joel": "minor_prophets_tg_librivox",
+    "Amos": "minor_prophets_tg_librivox",
+    "Obadiah": "minor_prophets_tg_librivox",
+    "Jonah": "minor_prophets_tg_librivox",
+    "Micah": "minor_prophets_tg_librivox",
+    "Nahum": "minor_prophets_tg_librivox",
+    "Habakkuk": "minor_prophets_tg_librivox",
+    "Zephaniah": "minor_prophets_tg_librivox",
+    "Haggai": "minor_prophets_tg_librivox",
+    "Zechariah": "minor_prophets_tg_librivox",
+    "Malachi": "minor_prophets_tg_librivox",
+    "Matthew": "matthew_kjv_mp_librivox",
+    "Mark": "mark_kjv_sw_librivox",
+    "Luke": "bible_kjv_nt_03_luke_0812_librivox",
+    "John": "biblent04_john_kjv_librivox",
+    "Acts": "acts_kjv_1112_librivox",
+    "Romans": "romans_kjv_1103_librivox",
+    "1 Corinthians": "1corinthians_kjv_1103_librivox",
+    "2 Corinthians": "2corinthians_kjv_1105_librivox",
+    "Galatians": "bible_4epistles_kjv_1104_librivox",
+    "Ephesians": "bible_4epistles_kjv_1104_librivox",
+    "Philippians": "bible_4epistles_kjv_1104_librivox",
+    "Colossians": "bible_4epistles_kjv_1104_librivox",
+    "1 Thessalonians": "bible_1thessalonians_kjv_1010_librivox",
+    "2 Thessalonians": "bible_2thessalonians_kjv_1011_librivox",
+    "1 Timothy": "bible_1timothy_kjv_1007_librivox",
+    "2 Timothy": "bible_2timothy_kjv_1009_librivox",
+    "Titus": "bible_titus_kjv_1007_librivox",
+    "Philemon": "bible_philemon_kjv_1007_librivox",
+    "Hebrews": "hebrews_kjv_1111_librivox",
+    "1 Peter": "epistlesofpeter_kjv_1109_librivox",
+    "2 Peter": "epistlesofpeter_kjv_1109_librivox",
+    "1 John": "bible_epistlesjohn_rt_librivox",
+    "2 John": "bible_epistlesjohn_rt_librivox",
+    "3 John": "bible_epistlesjohn_rt_librivox",
+    "Jude": "bible_epistlesjohn_rt_librivox",
+    "Revelation": "revelation_mp_librivox",
+  },
+  YLT: {
+    "Genesis": "bible_ylt_01_genesis_mp_0903_librivox",
+    "Exodus": "bible_ylt_02_exodus_mp_0909_librivox",
+    "Leviticus": "bible_ylt_03_leviticus_mp_0910_librivox",
+    "Numbers": "numbers_mp_librivox",
+    "Joshua": "bible_ylt_joshua_1004_librivox",
+    "Judges": "bible_judges_ylt_1009-librivox",
+    "Ruth": "ruth_ylt_mp_librivox",
+    "1 Samuel": "bible_ylt_09_1_samuel_1705_librivox",
+    "2 Samuel": "ylt2samuel_1712_librivox",
+    "2 Kings": "bible_2kings_1806_librivox",
+    "1 Chronicles": "bible_ylt_13_1chronicals_1104_librivox",
+    "2 Chronicles": "2chronylt_mp_librivox",
+    "Ezra": "bible_ylt_ezra_mp_librivox",
+    "Nehemiah": "bible_ylt_nehemiah_1106",
+    "Esther": "book_of_esther_ylt_mp_1506_librivox",
+    "Job": "bible_ylt_job_0902_librivox",
+    "Psalms": "psalms_ylt_mp_librivox",
+    "Proverbs": "bible_proverbs_ylt_1010_librivox",
+    "Ecclesiastes": "ecclesiastes_ylt_mp_librivox",
+    "Song of Solomon": "songofsolomon_ylt_1509_librivox",
+    "Isaiah": "book_of_isaiah_ylt_mp_librivox",
+    "Jeremiah": "bible_ylt_24_mp_librivox",
+    "Lamentations": "book_of_lamentations_ylt_mp_librivox",
+    "Ezekiel": "ylt_ezekiel_0808_librivox",
+    "Daniel": "book_of_daniel_ylt_mp",
+    "Hosea": "book_of_hosea_ylt_mp_librivox",
+    "Joel": "book_of_joel_ylt_mp_librivox",
+    "Amos": "book_of_amos_ylt_mp_librivox",
+    "Obadiah": "books_of_obadiah_jonah_micah_ylt_mp_librivox",
+    "Jonah": "books_of_obadiah_jonah_micah_ylt_mp_librivox",
+    "Micah": "books_of_obadiah_jonah_micah_ylt_mp_librivox",
+    "Nahum": "bible_ylt_34-37_mp_librivox",
+    "Habakkuk": "bible_ylt_34-37_mp_librivox",
+    "Zephaniah": "bible_ylt_34-37_mp_librivox",
+    "Haggai": "bible_ylt_34-37_mp_librivox",
+    "Zechariah": "zechariah_and_malachi_ylt_mp_librivox",
+    "Malachi": "zechariah_and_malachi_ylt_mp_librivox",
+    "Matthew": "ylt_matthew_2103_librivox",
+    "Mark": "mark_ylt_1912_librivox",
+    "Luke": "luke_ylt_2104_librivox",
+    "John": "john_ylt_2011_librivox",
+    "Acts": "bible_ylt_nt_05_acts_2003_librivox",
+    "Romans": "bible_ylt_nt_06_romans_2004_librivox",
+    "1 Corinthians": "1corinthians_ylt_2111_librivox",
+    "2 Corinthians": "2ndcorinthiansylt_2201_librivox",
+    "Galatians": "bible_ylt_nt_09_galatians_1912_librivox",
+    "Ephesians": "ephesians_ylt_2001_librivox",
+    "Philippians": "philippians_ylt_2110_librivox",
+    "Colossians": "colossiansylt_2112_librivox",
+    "1 Thessalonians": "bible_1_2_thessalonians_ylt_2102_librivox",
+    "2 Thessalonians": "bible_1_2_thessalonians_ylt_2102_librivox",
+    "1 Timothy": "timothy_ylt_2103_librivox",
+    "2 Timothy": "timothy_ylt_2103_librivox",
+    "Titus": "bible_ylt_nt17_titus_2001_librivox",
+    "Philemon": "philemon_ylt_2109_librivox",
+    "Hebrews": "hebrews_ylt_1912_librivox",
+    "James": "james_ylt_2006_librivox",
+    "1 Peter": "epistlesofpeter_ylt_2012_librivox",
+    "2 Peter": "epistlesofpeter_ylt_2012_librivox",
+    "1 John": "epistlesofjohn_ylt_2004_librivox",
+    "2 John": "epistlesofjohn_ylt_2004_librivox",
+    "3 John": "epistlesofjohn_ylt_2004_librivox",
+    "Jude": "bible_ylt_nt26_jude_1912_librivox",
+    "Revelation": "revelation_ylt_2110_librivox",
+  },
+  ASV: {
+    "Genesis": "bible_001_asv.mp3",
+    "Exodus": "bible_002_asv.mp3",
+    "Leviticus": "bible_003_asv.mp3",
+    "Numbers": "bible_004_asv.mp3",
+    "Deuteronomy": "bible_005_asv.mp3",
+    "Joshua": "bible_006_asv.mp3",
+    "Judges": "bible_007_asv.mp3",
+    "Ruth": "bible_008_asv.mp3",
+    "1 Samuel": "bible_009_asv.mp3",
+    "2 Samuel": "bible_010_asv.mp3",
+    "1 Kings": "bible_011_asv.mp3",
+    "2 Kings": "bible_012_asv.mp3",
+    "1 Chronicles": "bible_013_asv.mp3",
+    "2 Chronicles": "bible_014_asv.mp3",
+    "Ezra": "bible_015_asv.mp3",
+    "Nehemiah": "bible_016_asv.mp3",
+    "Esther": "bible_017_asv.mp3",
+    "Job": "bible_018_asv.mp3",
+    "Psalms": "bible_019_asv.mp3",
+    "Proverbs": "bible_020_asv.mp3",
+    "Ecclesiastes": "bible_021_asv.mp3",
+    "Song of Solomon": "bible_022_asv.mp3",
+    "Isaiah": "bible_023_asv.mp3",
+    "Jeremiah": "bible_024_asv.mp3",
+    "Lamentations": "bible_025_asv.mp3",
+    "Ezekiel": "bible_026_asv.mp3",
+    "Daniel": "bible_027_asv.mp3",
+    "Hosea": "bible_028_asv.mp3",
+    "Joel": "bible_029_asv.mp3",
+    "Amos": "bible_030_asv.mp3",
+    "Obadiah": "bible_031_asv.mp3",
+    "Jonah": "bible_032_asv.mp3",
+    "Micah": "bible_033_asv.mp3",
+    "Nahum": "bible_034_asv.mp3",
+    "Habakkuk": "bible_035_asv.mp3",
+    "Zephaniah": "bible_036_asv.mp3",
+    "Haggai": "bible_037_asv.mp3",
+    "Zechariah": "bible_038_asv.mp3",
+    "Malachi": "bible_039_asv.mp3",
+    "Matthew": "bible_040_asv.mp3",
+    "Mark": "bible_041_asv.mp3",
+    "Luke": "bible_042_asv.mp3",
+    "John": "bible_043_asv.mp3",
+    "Acts": "bible_044_asv.mp3",
+    "Romans": "bible_045_asv.mp3",
+    "1 Corinthians": "bible_046_asv.mp3",
+    "2 Corinthians": "bible_047_asv.mp3",
+    "Galatians": "bible_048_asv.mp3",
+    "Ephesians": "bible_049_asv.mp3",
+    "Philippians": "bible_050_asv.mp3",
+    "Colossians": "bible_051_asv.mp3",
+    "1 Thessalonians": "bible_052_asv.mp3",
+    "2 Thessalonians": "bible_053_asv.mp3",
+    "1 Timothy": "bible_054_asv.mp3",
+    "2 Timothy": "bible_055_asv.mp3",
+    "Titus": "bible_056_asv.mp3",
+    "Philemon": "bible_057_asv.mp3",
+    "Hebrews": "bible_058_asv.mp3",
+    "James": "bible_059_asv.mp3",
+    "1 Peter": "bible_060_asv.mp3",
+    "2 Peter": "bible_061_asv.mp3",
+    "1 John": "bible_062_asv.mp3",
+    "2 John": "bible_063_asv.mp3",
+    "3 John": "bible_064_asv.mp3",
+    "Jude": "bible_065_asv.mp3",
+    "Revelation": "bible_066_asv.mp3",
+  }
+};
+
+const librivoxCache = {};
+
+async function fetchLibrivoxFiles(identifier) {
+  if (librivoxCache[identifier]) return librivoxCache[identifier];
+  const res = await fetch(`https://archive.org/metadata/${identifier}/files`);
+  if (!res.ok) throw new Error(`Archive.org returned ${res.status}`);
+  const data = await res.json();
+  const mp3s = (data.result || data.files || []).filter(f => f.name.endsWith('.mp3'));
+  mp3s.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+  librivoxCache[identifier] = mp3s;
+  return mp3s;
+}
+
+function matchChapter(files, chapter) {
+  const ch = String(chapter);
+  const patterns = [
+    new RegExp(`(?:chapter|ch|_ch_|_ch)\\s*${ch}\\b`, 'i'),
+    new RegExp(`\\b${ch}\\.`),
+    new RegExp(`\\b${ch}_`),
+    new RegExp(`\\b0*${ch}\\b`)
+  ];
+  for (const pat of patterns) {
+    const m = files.find(f => pat.test(f.name));
+    if (m) return m;
+  }
+  if (files.length >= chapter) return files[chapter - 1];
+  return null;
+}
+
+async function autoLoadAudio() {
+  const ver = versionSelect.value;
+  const book = currentBook;
+  const chapter = currentChapter;
+  if (!AUDIO_VERSIONS.includes(ver) || !book || !chapter) return;
+  const libriMap = LIBRIVOX_MAP[ver];
+  if (!libriMap) return;
+
+  if (ver === 'ASV') {
+    const fname = libriMap[book];
+    if (!fname) return;
+    const localPath = `${AUDIO_BASE}/asv/${fname}`;
+    try {
+      const resp = await fetch(localPath, { method: 'HEAD' });
+      if (resp.ok) {
+        audio.src = localPath;
+        audio.load();
+        setVolume(volumeSlider.value);
+        statusEl.textContent = `Audio: ${book} ${chapter}`;
+        return;
+      }
+    } catch (e) {}
+    statusEl.textContent = `Run download_audio.py to get ${ver} audio files.`;
+    return;
+  }
+
+  const identifier = libriMap[book];
+  if (!identifier) return;
+
+  const folder = ver.toLowerCase();
+  const localDir = `${AUDIO_BASE}/${folder}`;
+
+  try {
+    const resp = await fetch(`${localDir}/`, { method: 'HEAD' });
+    if (!resp.ok) throw new Error('no local dir');
+    const res = await fetch(`https://archive.org/metadata/${identifier}/files`);
+    if (!res.ok) throw new Error('Archive.org fetch failed');
+    const data = await res.json();
+    const allFiles = (data.result || data.files || []).filter(f => f.name.endsWith('.mp3'));
+    allFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+    const file = matchChapter(allFiles, chapter);
+    if (file) {
+      const localPath = `${localDir}/${file.name}`;
+      try {
+        const lr = await fetch(localPath, { method: 'HEAD' });
+        if (lr.ok) {
+          audio.src = localPath;
+          audio.load();
+          setVolume(volumeSlider.value);
+          statusEl.textContent = `Audio: ${book} ${chapter}`;
+          return;
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  try {
+    const files = await fetchLibrivoxFiles(identifier);
+    if (!files.length) return;
+    const file = matchChapter(files, chapter);
+    if (!file) return;
+    const url = `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`;
+    audio.src = url;
+    audio.load();
+    setVolume(volumeSlider.value);
+    statusEl.textContent = `Audio: ${book} ${chapter} (streaming)`;
+  } catch (err) {
+    statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
+  }
+}
+
+
+audio.ontimeupdate = () => {
+  if (!audio.duration) return;
+  seekBar.value = audio.currentTime / audio.duration;
+  timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+  updateSync();
+};
+
+audio.onended = () => { isPlaying = false; playBtn.textContent = '\u25B6'; cancelAnimationFrame(rafId); };
+
+audio.onplay = () => { isPlaying = true; playBtn.textContent = '\u23F8'; setVolume(volumeSlider.value); };
+audio.onpause = () => { isPlaying = false; playBtn.textContent = '\u25B6'; };
+
+function togglePlayPause() {
+  if (!audio.src) { statusEl.textContent = 'Load an audio file first.'; return; }
+  if (audio.paused) {
+    audio.play().then(() => {
+      isPlaying = true;
+      playBtn.textContent = '\u23F8';
+    }).catch(err => {
+      statusEl.textContent = 'Playback failed: ' + err.message;
+    });
+  } else {
+    audio.pause();
+    isPlaying = false;
+    playBtn.textContent = '\u25B6';
+  }
+}
+
+playBtn.onclick = togglePlayPause;
+
+seekBar.oninput = () => {
+  if (!audio.duration) return;
+  audio.currentTime = seekBar.value * audio.duration;
+};
+
+function setVolume(v) {
+  const val = parseFloat(v);
+  audio.volume = val;
+  volPct.textContent = Math.round(val * 100) + '%';
+  volIcon.innerHTML = val == 0 ? '&#128263;' : val < 0.5 ? '&#128265;' : '&#128266;';
+}
+setVolume(volumeSlider.value);
+
+volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+volumeSlider.addEventListener('change', () => setVolume(volumeSlider.value));
+
+function updateSync() {
+  if (timestamps.every(t => t == null)) return;
+  const valid = timestamps.map((t,i) => ({t,i})).filter(x => x.t != null).sort((a,b) => a.t - b.t);
+  if (!valid.length) return;
+  let best = valid[0].i;
+  for (let i = 1; i < valid.length; i++) {
+    if (audio.currentTime >= valid[i].t) best = valid[i].i;
+  }
+  if (best !== currentVerseIndex) {
+    currentVerseIndex = best;
+    highlightVerse(currentVerseIndex);
+  }
+}
+
+// Timestamp mode toggle
+timestampModeCb.onchange = () => {
+  document.body.classList.toggle('timestamp-mode', timestampModeCb.checked);
+  statusEl.textContent = timestampModeCb.checked
+    ? 'TIMESTAMP MODE: Click a verse to set its timestamp at the current audio position.'
+    : 'Normal mode.';
+};
+
+// Strong's numbers toggle
+showStrongsCb.onchange = () => {
+  renderVerses();
+};
+
+// Click-a-word Strong's dictionary popup
+const dictOverlay = document.createElement('div');
+dictOverlay.className = 'dict-overlay';
+dictOverlay.innerHTML = `<div class="dict-box">
+  <div class="dict-head"><span class="dict-title">Dictionary</span>
+  <button class="dict-close" aria-label="Close dictionary" title="Close">&#10005;</button></div>
+  <div class="dict-tabs">
+    <div class="dict-tab active" data-dict="strongs">Strong's</div>
+    <div class="dict-tab" data-dict="thayers">Thayer's</div>
+    <div class="dict-tab" data-dict="bdb">BDB</div>
+    <div class="dict-tab" data-dict="vines">Vine's</div>
+    <div class="dict-tab" data-dict="eastons">Easton's</div>
+    <div class="dict-tab" data-dict="smiths">Smith's</div>
+    <div class="dict-tab" data-dict="faussets">Fausset's</div>
+    <div class="dict-tab" data-dict="hitchcocks">Hitchcock's</div>
+    <div class="dict-tab" data-dict="jfb">JFB</div>
+    <div class="dict-tab" data-dict="gills">Gill's</div>
+  </div>
+  <div style="padding:8px 16px;border-bottom:1px solid #1a5c2a;display:flex;gap:6px;">
+    <input type="text" id="dictSearchInput" placeholder="Search G1 / H1 / word..." style="flex:1;padding:6px 10px;border:1px solid #1a5c2a;border-radius:4px;background:#0a1f0a;color:#fff;font-size:0.9rem;font-family:inherit;" />
+    <button id="dictSearchBtn" style="padding:6px 12px;border:1px solid #1a5c2a;border-radius:4px;background:#1a5c2a;color:#4caf50;font-weight:600;cursor:pointer;font-size:0.9rem;">Lookup</button>
+  </div>
+  <div class="dict-body"></div>
+</div>`;
+document.body.appendChild(dictOverlay);
+let activeDict = 'strongs';
+dictOverlay.querySelectorAll('.dict-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    dictOverlay.querySelectorAll('.dict-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeDict = tab.dataset.dict;
+    const src = DICT_SOURCES[activeDict];
+    dictSearchInput.placeholder = src ? src.placeholder : (activeDict === 'strongs' || activeDict === 'thayers') ? 'Search G1 / H1 / word...' : 'Search word...';
+    const q = dictSearchInput.value.trim();
+    if (q) dictSearch();
+  });
+});
+
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+const DICT_SOURCES = {
+  bdb: { file: 'data/bdb.js', var: '_DATA_bdb', name: "Brown-Driver-Briggs Hebrew Lexicon", placeholder: "Search G1 / H1 / word..." },
+  vines: { file: 'data/vines.js', var: '_DATA_vines', name: "Vine's Expository Dictionary", placeholder: "Search word..." },
+  faussets: { file: 'data/faussets.js', var: '_DATA_faussets', name: "Fausset's Bible Dictionary", placeholder: "Search word..." },
+  jfb: { file: 'data/jfb.js', var: '_DATA_jfb', name: "JFB Commentary", placeholder: "Search book or reference..." },
+  gills: { file: 'data/gills.js', var: '_DATA_gills', name: "Gill's Exposition", placeholder: "Search book or reference..." }
+};
+
+async function ensureDictData(key) {
+  const src = DICT_SOURCES[key];
+  if (!src) return true;
+  if (window[src.var]) return true;
+  const s = document.createElement('script');
+  s.src = src.file;
+  document.head.appendChild(s);
+  return new Promise(resolve => {
+    s.onload = () => resolve(!!window[src.var]);
+    s.onerror = () => resolve(false);
+    setTimeout(() => resolve(!!window[src.var]), 5000);
+  });
+}
+
+function dictClose() {
+  dictOverlay.classList.remove('open');
+}
+
+// Help overlay
+const helpOverlay = document.createElement('div');
+helpOverlay.className = 'help-overlay';
+helpOverlay.innerHTML = `<div class="help-box">
+  <div class="help-head"><span>Keyboard Shortcuts</span>
+  <button class="dict-close" aria-label="Close help" title="Close">&#10005;</button></div>
+  <div class="help-body">
+    <div class="help-row"><span class="help-key">Space</span><span class="help-desc">Play / Pause audio</span></div>
+    <div class="help-row"><span class="help-key">T</span><span class="help-desc">Start TTS Audiobook (or stop if playing)</span></div>
+    <div class="help-row"><span class="help-key">&larr; Arrow</span><span class="help-desc">Seek backward 3 seconds</span></div>
+    <div class="help-row"><span class="help-key">&rarr; Arrow</span><span class="help-desc">Seek forward 3 seconds</span></div>
+    <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Close dictionary popup</span></div>
+    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
+  </div>
+</div>`;
+document.body.appendChild(helpOverlay);
+helpOverlay.querySelector('.dict-close').onclick = () => helpOverlay.classList.remove('open');
+helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) helpOverlay.classList.remove('open'); });
+document.getElementById('helpBtn').addEventListener('click', () => helpOverlay.classList.toggle('open'));
+
+// Dyslexia Mode
+const dyslexiaBtn = document.getElementById('dyslexiaBtn');
+const dyslexiaBar = document.getElementById('dyslexiaBar');
+const readingRuler = document.getElementById('readingRuler');
+const rulerLine = readingRuler.querySelector('.reading-ruler-line');
+let dyslexiaOn = localStorage.getItem('dyslexia') === 'true';
+let rulerOn = localStorage.getItem('dysRuler') === 'true';
+
+function applyDyslexia() {
+  const fs = document.getElementById('dysFontSize').value;
+  const ls = document.getElementById('dysLetterSpacing').value;
+  const lh = document.getElementById('dysLineHeight').value;
+  const bg = document.getElementById('dysBg').value;
+  document.documentElement.style.setProperty('--dys-font-size', fs + 'em');
+  document.documentElement.style.setProperty('--dys-line-height', lh);
+  document.body.style.letterSpacing = ls + 'em';
+  document.body.style.wordSpacing = (parseFloat(ls) * 2) + 'em';
+  document.getElementById('dysFontSizeVal').textContent = fs + 'x';
+  document.getElementById('dysLetterSpacingVal').textContent = ls;
+  document.getElementById('dysLineHeightVal').textContent = lh;
+  document.body.className = document.body.className.replace(/\bdyslexia-bg-\S+/g, '').trim();
+  if (dyslexiaOn) {
+    document.body.classList.add('dyslexia');
+    if (bg) document.body.classList.add('dyslexia-bg-' + bg);
+  }
+  localStorage.setItem('dysFontSize', fs);
+  localStorage.setItem('dysLetterSpacing', ls);
+  localStorage.setItem('dysLineHeight', lh);
+  localStorage.setItem('dysBg', bg);
+}
+
+function toggleDyslexia() {
+  dyslexiaOn = !dyslexiaOn;
+  localStorage.setItem('dyslexia', dyslexiaOn);
+  dyslexiaBar.classList.toggle('visible', dyslexiaOn);
+  dyslexiaBtn.classList.toggle('active', dyslexiaOn);
+  if (!dyslexiaOn) {
+    document.body.classList.remove('dyslexia');
+    document.body.className = document.body.className.replace(/\bdyslexia-bg-\S+/g, '').trim();
+    document.body.style.letterSpacing = '';
+    document.body.style.wordSpacing = '';
+    document.documentElement.style.removeProperty('--dys-font-size');
+    document.documentElement.style.removeProperty('--dys-line-height');
+  } else {
+    applyDyslexia();
+  }
+}
+
+dyslexiaBtn.addEventListener('click', toggleDyslexia);
+
+['dysFontSize', 'dysLetterSpacing', 'dysLineHeight', 'dysBg'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyDyslexia);
+});
+
+document.getElementById('dysRulerBtn').addEventListener('click', () => {
+  rulerOn = !rulerOn;
+  localStorage.setItem('dysRuler', rulerOn);
+  readingRuler.classList.toggle('visible', rulerOn);
+  document.getElementById('dysRulerBtn').classList.toggle('active', rulerOn);
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!rulerOn) return;
+  rulerLine.style.top = (e.clientY - 25) + 'px';
+});
+
+document.getElementById('dysResetBtn').addEventListener('click', () => {
+  document.getElementById('dysFontSize').value = 1.15;
+  document.getElementById('dysLetterSpacing').value = 0.05;
+  document.getElementById('dysLineHeight').value = 2.2;
+  document.getElementById('dysBg').value = '';
+  applyDyslexia();
+});
+
+// Restore saved settings
+if (dyslexiaOn) {
+  dyslexiaOn = false;
+  toggleDyslexia();
+  const savedFs = localStorage.getItem('dysFontSize');
+  const savedLs = localStorage.getItem('dysLetterSpacing');
+  const savedLh = localStorage.getItem('dysLineHeight');
+  const savedBg = localStorage.getItem('dysBg');
+  if (savedFs) document.getElementById('dysFontSize').value = savedFs;
+  if (savedLs) document.getElementById('dysLetterSpacing').value = savedLs;
+  if (savedLh) document.getElementById('dysLineHeight').value = savedLh;
+  if (savedBg) document.getElementById('dysBg').value = savedBg;
+  applyDyslexia();
+}
+if (rulerOn) {
+  readingRuler.classList.add('visible');
+  document.getElementById('dysRulerBtn').classList.add('active');
+}
+
+function openWordDict(snString) {
+  activeDict = 'strongs';
+  dictOverlay.querySelectorAll('.dict-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.dict === 'strongs');
+  });
+  const nums = String(snString).split('/');
+  const found = nums
+    .map(g => ({ g: g, e: window._DATA_lexicon && window._DATA_lexicon[g] }))
+    .filter(x => x.e);
+  const titleEl = dictOverlay.querySelector('.dict-title');
+  if (found.length === 1) {
+    const isHeb = found[0].g.startsWith('H');
+    titleEl.textContent = isHeb ? "Strong's Hebrew Dictionary" : "Strong's Greek Dictionary";
+  } else {
+    titleEl.textContent = "Dictionary";
+  }
+  const body = dictOverlay.querySelector('.dict-body');
+  if (!found.length) {
+    body.innerHTML = `<div class="dict-entry"><p class="dict-none">No dictionary entry for ${escHtml(nums.join(', '))}.</p></div>`;
+  } else {
+    body.innerHTML = found.map((x, idx) => {
+      const e = x.e;
+      let html = `<div class="dict-entry">`;
+      if (found.length > 1) html += `<div class="dict-num">${escHtml(x.g)}</div>`;
+      html += `<div class="dict-lemma">${e.l ? escHtml(e.l) : escHtml(x.g)}${e.t ? ` <span class="dict-translit">(${escHtml(e.t)})</span>` : ''}</div>`;
+      if (e.d) html += `<p class="dict-def">${escHtml(e.d)}</p>`;
+      if (e.r) html += `<p class="dict-deriv">${escHtml(e.r)}</p>`;
+      if (e.k) html += `<p class="dict-kjv"><span class="dict-kjv-label">KJV:</span> ${escHtml(e.k)}</p>`;
+      if (e.th) {
+        html += `<div class="dict-section-label">Thayer's Lexicon</div>`;
+        html += `<p class="dict-def">${escHtml(e.th)}</p>`;
+      }
+      html += `</div>`;
+      return html;
+    }).join('');
+  }
+  dictOverlay.classList.add('open');
+}
+
+dictOverlay.querySelector('.dict-close').onclick = dictClose;
+dictOverlay.addEventListener('click', (e) => {
+  if (e.target === dictOverlay) dictClose();
+});
+
+const dictSearchInput = document.getElementById('dictSearchInput');
+const dictSearchBtn = document.getElementById('dictSearchBtn');
+async function dictSearch() {
+  const q = dictSearchInput.value.trim();
+  if (!q) return;
+  const body = dictOverlay.querySelector('.dict-body');
+  const titleEl = dictOverlay.querySelector('.dict-title');
+
+  if (activeDict === 'strongs' || activeDict === 'thayers') {
+    titleEl.textContent = activeDict === 'thayers' ? "Thayer's Greek Lexicon" : "Strong's Dictionary";
+    if (/^[gh]\d+/i.test(q)) {
+      openWordDict(q.toUpperCase());
+      return;
+    }
+    const matches = Object.entries(_DATA_lexicon).filter(([k, v]) => {
+      if (activeDict === 'thayers') {
+        const searchable = ((v.l || '') + ' ' + (v.th || '') + ' ' + (v.t || '')).toLowerCase();
+        return searchable.includes(q.toLowerCase());
+      }
+      const searchable = ((v.l || '') + ' ' + (v.k || '') + ' ' + (v.d || '')).toLowerCase();
+      return searchable.includes(q.toLowerCase());
+    }).slice(0, 20);
+    if (!matches.length) {
+      body.innerHTML = `<div class="dict-entry"><p class="dict-none">No results for "${escHtml(q)}".</p></div>`;
+    } else {
+      body.innerHTML = matches.map(([k, v]) => {
+        let html = `<div class="dict-entry"><div class="dict-num">${escHtml(k)}</div>`;
+        html += `<div class="dict-lemma">${v.l ? escHtml(v.l) : ''}${v.t ? ` <span class="dict-translit">(${escHtml(v.t)})</span>` : ''}</div>`;
+        if (activeDict === 'thayers' && v.th) {
+          html += `<p class="dict-def">${escHtml(v.th)}</p>`;
+        } else {
+          if (v.d) html += `<p class="dict-def">${escHtml(v.d)}</p>`;
+          if (v.k) html += `<p class="dict-kjv"><span class="dict-kjv-label">KJV:</span> ${escHtml(v.k)}</p>`;
+        }
+        html += `</div>`;
+        return html;
+      }).join('');
+    }
+    dictOverlay.classList.add('open');
+    return;
+  }
+
+  if (activeDict === 'bdb') {
+    titleEl.textContent = DICT_SOURCES.bdb.name;
+    dictSearchInput.placeholder = DICT_SOURCES.bdb.placeholder;
+    const loaded = await ensureDictData('bdb');
+    if (!loaded) { body.innerHTML = `<div class="dict-entry"><p class="dict-none">Failed to load BDB.</p></div>`; dictOverlay.classList.add('open'); return; }
+    if (/^[gh]\d+/i.test(q)) {
+      const val = window._DATA_bdb[q.toUpperCase()];
+      if (val) {
+        body.innerHTML = `<div class="dict-entry"><div class="dict-num">${escHtml(q.toUpperCase())}</div><p class="dict-def">${val}</p></div>`;
+      } else {
+        body.innerHTML = `<div class="dict-entry"><p class="dict-none">No BDB entry for ${escHtml(q.toUpperCase())}.</p></div>`;
+      }
+    } else {
+      const qLower = q.toLowerCase();
+      const matches = Object.entries(window._DATA_bdb).filter(([k, v]) => {
+        return k.toLowerCase().includes(qLower) || String(v).toLowerCase().includes(qLower);
+      }).slice(0, 20);
+      if (!matches.length) {
+        body.innerHTML = `<div class="dict-entry"><p class="dict-none">No results for "${escHtml(q)}".</p></div>`;
+      } else {
+        body.innerHTML = matches.map(([k, v]) => {
+          return `<div class="dict-entry"><div class="dict-num">${escHtml(k)}</div><p class="dict-def">${v}</p></div>`;
+        }).join('');
+      }
+    }
+    dictOverlay.classList.add('open');
+    return;
+  }
+
+  if (activeDict === 'vines') {
+    titleEl.textContent = DICT_SOURCES.vines.name;
+    dictSearchInput.placeholder = DICT_SOURCES.vines.placeholder;
+    const loaded = await ensureDictData('vines');
+    if (!loaded) { body.innerHTML = `<div class="dict-entry"><p class="dict-none">Failed to load Vine's.</p></div>`; dictOverlay.classList.add('open'); return; }
+    const data = window._DATA_vines;
+    const qLower = q.toLowerCase();
+    const exact = data[q.toUpperCase()];
+    const matches = Object.entries(data).filter(([k]) => k.toLowerCase().includes(qLower)).slice(0, 30);
+    if (exact && !matches.find(([k]) => k === q.toUpperCase())) {
+      matches.unshift([q.toUpperCase(), exact]);
+    }
+    if (!matches.length) {
+      body.innerHTML = `<div class="dict-entry"><p class="dict-none">No results for "${escHtml(q)}".</p></div>`;
+    } else {
+      body.innerHTML = matches.map(([k, v]) => {
+        return `<div class="dict-entry"><div class="dict-lemma">${escHtml(k)}</div><p class="dict-topical">${escHtml(v)}</p></div>`;
+      }).join('');
+    }
+    dictOverlay.classList.add('open');
+    return;
+  }
+
+  if (activeDict === 'jfb' || activeDict === 'gills') {
+    const src = DICT_SOURCES[activeDict];
+    titleEl.textContent = src.name;
+    dictSearchInput.placeholder = src.placeholder;
+    const loaded = await ensureDictData(activeDict);
+    if (!loaded) { body.innerHTML = `<div class="dict-entry"><p class="dict-none">Failed to load ${src.name}.</p></div>`; dictOverlay.classList.add('open'); return; }
+    const data = window[src.var];
+    const qLower = q.toLowerCase();
+    const BOOK_ALIASES = {
+      'gen': 'Genesis', 'exo': 'Exodus', 'lev': 'Leviticus', 'num': 'Numbers', 'deu': 'Deuteronomy',
+      'jos': 'Joshua', 'jdg': 'Judges', 'rut': 'Ruth', 'sa1': '1 Samuel', 'sa2': '2 Samuel',
+      'ki1': '1 Kings', 'ki2': '2 Kings', 'ch1': '1 Chronicles', 'ch2': '2 Chronicles',
+      'ezr': 'Ezra', 'neh': 'Nehemiah', 'est': 'Esther', 'job': 'Job', 'psa': 'Psalms',
+      'pro': 'Proverbs', 'ecc': 'Ecclesiastes', 'sol': 'Song of Solomon', 'isa': 'Isaiah',
+      'jer': 'Jeremiah', 'lam': 'Lamentations', 'eze': 'Ezekiel', 'dan': 'Daniel',
+      'hos': 'Hosea', 'joe': 'Joel', 'amo': 'Amos', 'oba': 'Obadiah', 'jon': 'Jonah',
+      'mic': 'Micah', 'nah': 'Nahum', 'hab': 'Habakkuk', 'zep': 'Zephaniah',
+      'hag': 'Haggai', 'zac': 'Zechariah', 'mal': 'Malachi',
+      'mat': 'Matthew', 'mar': 'Mark', 'luk': 'Luke', 'joh': 'John', 'act': 'Acts',
+      'rom': 'Romans', 'co1': '1 Corinthians', 'co2': '2 Corinthians', 'gal': 'Galatians',
+      'eph': 'Ephesians', 'phi': 'Philippians', 'col': 'Colossians',
+      'th1': '1 Thessalonians', 'th2': '2 Thessalonians', 'ti1': '1 Timothy', 'ti2': '2 Timothy',
+      'tit': 'Titus', 'phi': 'Philemon', 'heb': 'Hebrews', 'jam': 'James',
+      'pe1': '1 Peter', 'pe2': '2 Peter', 'jn1': '1 John', 'jn2': '2 John', 'jn3': '3 John',
+      'jud': 'Jude', 'rev': 'Revelation'
+    };
+    const parseRef = (str) => {
+      const m = str.match(/^(\d?\s*\w+)\s+(\d+):(\d+)/i);
+      if (m) {
+        const bookPart = m[1].trim().toLowerCase().replace(/\s+/g, '');
+        const alias = BOOK_ALIASES[bookPart] || bookPart;
+        const book = Object.keys(data).find(b => b.toLowerCase().replace(/\s+/g, '') === alias.toLowerCase().replace(/\s+/g, '') || b.toLowerCase().startsWith(qLower));
+        return { book: book || m[1], chapter: parseInt(m[2]), verse: parseInt(m[3]) };
+      }
+      const m2 = str.match(/^(\d?\s*\w+)\s+(\d+)/i);
+      if (m2) {
+        const bookPart = m2[1].trim().toLowerCase().replace(/\s+/g, '');
+        const alias = BOOK_ALIASES[bookPart] || bookPart;
+        const book = Object.keys(data).find(b => b.toLowerCase().replace(/\s+/g, '') === alias.toLowerCase().replace(/\s+/g, '') || b.toLowerCase().startsWith(qLower));
+        return { book: book || m2[1], chapter: parseInt(m2[2]), verse: 0 };
+      }
+      return null;
+    };
+    const ref = parseRef(q);
+    if (ref && data[ref.book]) {
+      const chData = data[ref.book][ref.chapter];
+      if (chData) {
+        let entries;
+        if (ref.verse && chData[ref.verse]) {
+          entries = [[`${ref.book} ${ref.chapter}:${ref.verse}`, chData[ref.verse]]];
+        } else {
+          entries = Object.entries(chData).map(([v, h]) => [`${ref.book} ${ref.chapter}:${v}`, h]).slice(0, 20);
+        }
+        body.innerHTML = entries.map(([label, html]) => {
+          return `<div class="dict-entry"><div class="dict-lemma">${escHtml(label)}</div><p class="dict-topical">${html}</p></div>`;
+        }).join('');
+      } else {
+        body.innerHTML = `<div class="dict-entry"><p class="dict-none">Chapter ${ref.chapter} not found in ${ref.book}.</p></div>`;
+      }
+    } else {
+      const bookMatches = Object.keys(data).filter(b => b.toLowerCase().includes(qLower)).slice(0, 10);
+      if (bookMatches.length) {
+        body.innerHTML = bookMatches.map(book => {
+          const chapters = Object.keys(data[book]).sort((a, b) => a - b);
+          return `<div class="dict-entry"><div class="dict-lemma">${escHtml(book)}</div><p class="dict-topical">${chapters.length} chapters available</p></div>`;
+        }).join('');
+      } else {
+        body.innerHTML = `<div class="dict-entry"><p class="dict-none">No results for "${escHtml(q)}". Try "John 3" or "Genesis 1:1".</p></div>`;
+      }
+    }
+    dictOverlay.classList.add('open');
+    return;
+  }
+
+  const dictMap = { eastons: window._DATA_eastons, smiths: window._DATA_smiths, hitchcocks: window._DATA_hitchcocks, faussets: window._DATA_faussets };
+  const dictNames = { eastons: "Easton's Bible Dictionary", smiths: "Smith's Bible Dictionary", hitchcocks: "Hitchcock's Bible Names", faussets: "Fausset's Bible Dictionary" };
+  if (DICT_SOURCES[activeDict] && !dictMap[activeDict]) {
+    await ensureDictData(activeDict);
+    dictMap[activeDict] = window[DICT_SOURCES[activeDict].var];
+  }
+  const data = dictMap[activeDict];
+  titleEl.textContent = dictNames[activeDict] || 'Dictionary';
+  if (!data) {
+    body.innerHTML = `<div class="dict-entry"><p class="dict-none">Dictionary not loaded.</p></div>`;
+    dictOverlay.classList.add('open');
+    return;
+  }
+  const qLower = q.toLowerCase();
+  const exact = data[q] || data[q.charAt(0).toUpperCase() + q.slice(1)];
+  const matches = Object.entries(data).filter(([k]) => k.toLowerCase().includes(qLower)).slice(0, 30);
+  if (exact && !matches.find(([k]) => k === (data[q] ? q : q.charAt(0).toUpperCase() + q.slice(1)))) {
+    matches.unshift([q, exact]);
+  }
+  if (!matches.length) {
+    body.innerHTML = `<div class="dict-entry"><p class="dict-none">No results for "${escHtml(q)}".</p></div>`;
+  } else {
+    body.innerHTML = matches.map(([k, v]) => {
+      return `<div class="dict-entry">
+        <div class="dict-lemma">${escHtml(k)}</div>
+        <p class="dict-topical">${escHtml(v)}</p>
+      </div>`;
+    }).join('');
+  }
+  dictOverlay.classList.add('open');
+}
+dictSearchBtn.onclick = dictSearch;
+dictSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') dictSearch(); });
+
+versesContainer.addEventListener('click', (e) => {
+  if (timestampModeCb.checked) return;
+  const w = e.target.closest('.w[data-sn]');
+  if (w) { openWordDict(w.getAttribute('data-sn')); return; }
+  const vEl = e.target.closest('.verse[data-index]');
+  if (!vEl) return;
+  const idx = parseInt(vEl.dataset.index, 10);
+  if (isNaN(idx)) return;
+  if (verses.length === 0) return;
+  speechSynthesis.cancel();
+  ttsRunning = true;
+  ttsIdx = idx;
+  ttsPlayBtn.style.display = 'none';
+  ttsStopBtn.classList.add('visible');
+  highlightVerse(ttsIdx);
+  ttsSpeak();
+});
+
+// TTS Audiobook
+const ttsPlayBtn = $('ttsPlayBtn');
+const ttsStopBtn = $('ttsStopBtn');
+const ttsSpeed = $('ttsSpeed');
+const ttsSpeedVal = $('ttsSpeedVal');
+const ttsVoiceSelect = $('ttsVoice');
+const ttsStatusEl = $('ttsStatus');
+let ttsRunning = false;
+let ttsIdx = 0;
+
+function langPrefixes(lang) {
+  return lang === 'grc' ? ['grc', 'el'] : [lang];
+}
+
+const LS_SAVED_VOICE = 'kgnt_ttsVoice';
+let voiceRetryTimer = null;
+
+function offlineVoicePool(voices) {
+  const onlineMarkers = /Google|Online|Network/i;
+  const local = voices.filter(v => v.localService === true && !onlineMarkers.test(v.name));
+  const noOnline = voices.filter(v => !onlineMarkers.test(v.name));
+  return (local.length ? local : noOnline).length ? (local.length ? local : noOnline) : voices;
+}
+
+function getFilteredVoices() {
+  const voices = speechSynthesis.getVoices();
+  const langFilter = VERSIONS[versionSelect.value].lang;
+  const prefixes = langPrefixes(langFilter);
+  return offlineVoicePool(voices).filter(v => prefixes.some(p => v.lang.startsWith(p)));
+}
+
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) {
+    clearTimeout(voiceRetryTimer);
+    voiceRetryTimer = setTimeout(loadVoices, 300);
+    return;
+  }
+  const pool = offlineVoicePool(voices);
+  const filtered = getFilteredVoices();
+  const langFilter = VERSIONS[versionSelect.value].lang;
+  ttsVoiceSelect.innerHTML = '';
+  const saved = safeGet(LS_SAVED_VOICE);
+  filtered.forEach((v, i) => {
+    const opt = new Option(`${v.name} (${v.lang})`, i);
+    if (v.lang.startsWith(langFilter)) opt.selected = true;
+    ttsVoiceSelect.appendChild(opt);
+  });
+  if (filtered.length) {
+    if (saved !== null && filtered[saved]) {
+      ttsVoiceSelect.value = saved;
+    } else {
+      ttsVoiceSelect.value = '0';
+    }
+  } else {
+    const any = pool.length ? pool[0] : null;
+    if (any) {
+      ttsVoiceSelect.add(new Option(`Auto (${any.name}, ${any.lang})`, ''));
+      ttsVoiceSelect.value = '';
+      ttsStatusEl.textContent = 'No matching voice for this language; using system default.';
+    }
+  }
+}
+if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+ttsVoiceSelect.onchange = () => {
+  const v = Number(ttsVoiceSelect.value);
+  if (Number.isInteger(v) && v >= 0) safeSet(LS_SAVED_VOICE, String(v));
+};
+
+ttsSpeed.oninput = () => { ttsSpeedVal.textContent = ttsSpeed.value + 'x'; };
+
+ttsPlayBtn.onclick = () => {
+  if (verses.length === 0) { ttsStatusEl.textContent = 'Load a chapter first.'; return; }
+  if (ttsRunning) { ttsPause(); return; }
+  speechSynthesis.cancel();
+  ttsRunning = true;
+  ttsIdx = currentVerseIndex >= 0 ? currentVerseIndex : 0;
+  ttsPlayBtn.style.display = 'none';
+  ttsStopBtn.classList.add('visible');
+  ttsSpeak();
+};
+
+ttsStopBtn.onclick = () => { ttsStop(); };
+
+function ttsPause() {
+  if (speechSynthesis.paused) {
+    speechSynthesis.resume();
+    ttsStatusEl.textContent = `Verse ${ttsIdx + 1}...`;
+  } else if (speechSynthesis.speaking) {
+    speechSynthesis.pause();
+    ttsStatusEl.textContent = 'Paused.';
+  }
+}
+
+function ttsStop() {
+  speechSynthesis.cancel();
+  ttsRunning = false;
+  clearWordHighlights();
+  ttsPlayBtn.style.display = '';
+  ttsStopBtn.classList.remove('visible');
+  ttsStatusEl.textContent = 'Stopped.';
+}
+
+function clearWordHighlights() {
+  document.querySelectorAll('.w.wa').forEach(el => el.classList.remove('wa'));
+}
+
+function charIndexToWordIndex(charIdx, tokens) {
+  let pos = 0;
+  let wordIdx = 0;
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].match(/^\s+$/)) { pos += tokens[i].length; continue; }
+    const start = pos;
+    pos += tokens[i].length;
+    if (charIdx >= start && charIdx < pos) return wordIdx;
+    wordIdx++;
+  }
+  return wordIdx;
+}
+
+function autoAdvanceChapter() {
+  const bookList = getBookList();
+  const maxCh = bookList[currentBook] || 0;
+
+  if (currentChapter < maxCh) {
+    currentChapter++;
+  } else {
+    const books = Object.keys(bookList);
+    const idx = books.indexOf(currentBook);
+    if (idx < 0 || idx >= books.length - 1) {
+      if ($('loopWhole').checked) {
+        currentBook = books[0];
+        currentChapter = 1;
+      } else if ($('loopNT').checked) {
+        const nt = firstNTBook();
+        if (nt && bookList[nt]) {
+          currentBook = nt;
+          currentChapter = 1;
+        } else {
+          ttsStatusEl.textContent = 'No repeat. End of Bible.';
+          setTimeout(ttsStop, 1500);
+          return;
+        }
+      } else {
+        ttsStatusEl.textContent = 'End of Bible.';
+        setTimeout(ttsStop, 1500);
+        return;
+      }
+    } else if ($('loopOT').checked) {
+      const nextBook = books[idx + 1];
+      const firstNT = firstNTBook();
+      if (firstNT && nextBook === firstNT) {
+        currentBook = books[0];
+        currentChapter = 1;
+      } else {
+        currentBook = nextBook;
+        currentChapter = 1;
+      }
+    } else {
+      currentBook = books[idx + 1];
+      currentChapter = 1;
+    }
+  }
+
+  bookSelect.value = currentBook;
+  populateChapters();
+  chapterSelect.value = currentChapter;
+  ttsStatusEl.textContent = 'Load next chapter...';
+  loadChapter().then(() => {
+    if (!ttsRunning || verses.length === 0) return;
+    ttsIdx = 0;
+    ttsSpeak();
+  }).catch(() => {
+    ttsStatusEl.textContent = 'Cannot load next chapter.';
+    ttsStop();
+  });
+}
+
+function firstNTBook() {
+  const v = versionSelect.value;
+  if (v === 'LXX' || v === 'Apocrypha') return null;
+  if (v === 'Arabic') return Object.keys(AR_BOOKS)[39]; // Matthew in Arabic
+  return 'Matthew';
+}
+
+function ttsSpeak() {
+  if (!ttsRunning) return;
+  if (ttsIdx >= verses.length) {
+    autoAdvanceChapter();
+    return;
+  }
+  clearWordHighlights();
+  const verseText = verses[ttsIdx];
+  const tokens = verseText.split(/(\s+)/);
+  const wordTokens = tokens.filter(t => !t.match(/^\s+$/));
+  const verseEl = document.querySelector(`.verse[data-index="${ttsIdx}"]`);
+  const wordEls = verseEl ? verseEl.querySelectorAll('.w') : [];
+
+  const utter = new SpeechSynthesisUtterance(verseText);
+  const filteredVoices = getFilteredVoices();
+  const selIdx = parseInt(ttsVoiceSelect.value) || 0;
+  if (filteredVoices[selIdx]) {
+    utter.voice = filteredVoices[selIdx];
+    utter.lang = filteredVoices[selIdx].lang;
+  }
+  utter.rate = parseFloat(ttsSpeed.value);
+  utter.volume = parseFloat(volumeSlider.value);
+  highlightVerse(ttsIdx);
+  ttsStatusEl.textContent = `Verse ${ttsIdx + 1}...`;
+
+  utter.onboundary = (e) => {
+    if (e.name === 'word') {
+      const wi = charIndexToWordIndex(e.charIndex, tokens);
+      clearWordHighlights();
+      if (wordEls[wi]) {
+        wordEls[wi].classList.add('wa');
+        if (!userScrolledAway) {
+          programmaticScroll = true;
+          wordEls[wi].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          scheduleProgrammaticScrollEnd();
+        }
+      }
+    }
+  };
+
+  utter.onend = () => {
+    clearWordHighlights();
+    if (!ttsRunning) return;
+    ttsIdx++;
+    ttsSpeak();
+  };
+  utter.onerror = (e) => {
+    clearWordHighlights();
+    if (e.error !== 'canceled') {
+      ttsStatusEl.textContent = `Speech error: ${e.error}`;
+      ttsStop();
+    }
+  };
+  speechSynthesis.speak(utter);
+}
+
+// Keyboard shortcut for TTS
+document.onkeydown = (e) => {
+  if (e.code === 'Escape') {
+    if (dictOverlay.classList.contains('open')) { e.preventDefault(); dictClose(); return; }
+    if (helpOverlay.classList.contains('open')) { e.preventDefault(); helpOverlay.classList.remove('open'); return; }
+  }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); if (ttsRunning) ttsPause(); else togglePlayPause(); }
+  if (e.code === 'KeyT') { e.preventDefault(); if (!ttsRunning) ttsPlayBtn.click(); else ttsStop(); }
+  if (e.code === 'ArrowLeft') { seekBar.value = Math.max(0, (audio.currentTime - 3) / (audio.duration || 1)); seekBar.oninput(); }
+  if (e.code === 'ArrowRight') { seekBar.value = Math.min(1, (audio.currentTime + 3) / (audio.duration || 1)); seekBar.oninput(); }
+};
+
+function formatTime(t) {
+  if (t == null || isNaN(t)) return '0:00';
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+// Load default (or resume last saved position)
+(async function initApp() {
+  await tryAutoReconnect();
+  applyResumedState();
+  await loadChapter();
+  if (resumeVerseIndex >= 0 && resumeVerseIndex < verses.length) {
+    currentVerseIndex = resumeVerseIndex;
+    highlightVerse(currentVerseIndex);
+    statusEl.textContent = `Resumed at verse ${resumeVerseIndex + 1}. Load an audio file to sync playback.`;
+  }
+})();
+</script>
+</body>
+</html>
