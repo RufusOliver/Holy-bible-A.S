@@ -1,0 +1,50 @@
+{
+  "name": "holy-bible-a-s",
+  "version": "1.0.0",
+  "description": "Holy Bible A.S - Bible Audio Sync with 60+ translations, TTS, dictionaries, and accessibility features",
+  "main": "electron/main.js",
+  "author": "RufusOliver",
+  "license": "MIT",
+  "homepage": "https://github.com/RufusOliver/Holy-bible-A.S",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RufusOliver/Holy-bible-A.S.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build:linux": "electron-builder --linux AppImage",
+    "build:win": "electron-builder --win nsis",
+    "build:mac": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.holybible.app",
+    "productName": "Holy Bible A.S",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "data/**/*",
+      "audio/**/*",
+      "electron/**/*",
+      "icon.png"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Education",
+      "icon": "icon.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icon.png"
+    }
+  }
+}
