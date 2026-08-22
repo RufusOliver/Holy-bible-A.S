@@ -1,0 +1,379 @@
+name: AI Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Get diff
+        id: diff
+        run: |
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD --stat)
+          echo "diff<<DIFFEOF" >> $GITHUB_OUTPUT
+          echo "$DIFF" >> $GITHUB_OUTPUT
+          echo "DIFFEOF" >> $GITHUB_OUTPUT
+
+          CODE_DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- '*.html' '*.js' '*.yml' 2>/dev/null | head -c 12000)
+          echo "code_diff<<CODEEOF" >> $GITHUB_OUTPUT
+          echo "$CODE_DIFF" >> $GITHUB_OUTPUT
+          echo "CODEEOF" >> $GITHUB_OUTPUT
+
+      - name: AI Code Review
+        if: env.HAS_OPENAI_KEY == 'true'
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node -e "
+            const https = require('https');
+            const fs = require('fs');
+
+            const diff = process.env.CODE_DIFF || 'No code changes';
+            const stats = process.env.DIFF || 'No stats';
+            const prTitle = '${{ github.event.pull_request.title }}';
+            const prBody = '${{ github.event.pull_request.body || '' }}';
+
+            const prompt = \`You are a senior code reviewer for a Bible audio sync web app (Holy Bible A.S).
+            Review this pull request and provide constructive feedback.
+
+            PR Title: \${prTitle}
+            PR Description: \${prBody}
+
+            Changed files stats:
+            \${stats}
+
+            Code diff (first 12000 chars):
+            \${diff}
+
+            Provide your review as a GitHub comment with:
+            1. **Summary** - What changed (1-2 sentences)
+            2. **Issues** - Any bugs, security problems, or performance concerns (be specific with file:line references)
+            3. **Suggestions** - Improvements or best practices
+            4. **Rating** - Rate the change: ✅ Good | ⚠️ Needs changes | ❌ Critical issues
+
+            Keep it concise and actionable. Use markdown formatting.
+          \`;
+
+            const body = JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: 1500,
+              temperature: 0.3
+            });
+
+            const options = {
+              hostname: 'api.openai.com',
+              path: '/v1/chat/completions',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+              }
+            };
+
+            const req = https.request(options, (res) => {
+              let data = '';
+              res.on('data', chunk => data += chunk);
+              res.on('end', () => {
+                try {
+                  const result = JSON.parse(data);
+                  const review = result.choices[0].message.content;
+                  fs.writeFileSync('review.md', review);
+                  console.log('Review generated successfully');
+                } catch(e) {
+                  console.error('Parse error:', e.message);
+                  fs.writeFileSync('review.md', 'AI review unavailable (API error)');
+                }
+              });
+            });
+            req.on('error', (e) => {
+              console.error('Request error:', e.message);
+              fs.writeFileSync('review.md', 'AI review unavailable (network error)');
+            });
+            req.write(body);
+            req.end();
+          "
+
+      - name: Post review comment
+        if: env.HAS_OPENAI_KEY == 'true'
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f review.md ] && [ -s review.md ]; then
+            REVIEW=$(cat review.md)
+            echo "$REVIEW"
+            curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              -d "$(jq -n --arg body "$REVIEW" '{body: $body}')"
+          fi
+
+      - name: Skip review (no API key)
+        if: env.HAS_OPENAI_KEY != 'true'
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: |
+          echo "::notice::AI review skipped. Add OPENAI_API_KEY secret to enable."
+
+  auto-fix:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Auto-fix common issues
+        run: |
+          echo "=== Auto-fix scan ==="
+          FIXED=0
+
+          # Fix trailing whitespace in index.html
+          if grep -Pn ' +$' index.html > /dev/null 2>&1; then
+            echo "Fixing trailing whitespace..."
+            sed -i 's/[[:space:]]*$//' index.html
+            FIXED=$((FIXED + 1))
+          fi
+
+          # Fix missing semicolons in data files
+          for f in data/*.js; do
+            CONTENT=$(tail -c 2 "$f")
+            if [ "$CONTENT" != ";" ]; then
+              echo "Fixing missing semicolon in $f"
+              echo ";" >> "$f"
+              FIXED=$((FIXED + 1))
+            fi
+          done
+
+          # Check for console.log statements (warn only)
+          LOGS=$(grep -rn 'console\.log' index.html 2>/dev/null | wc -l)
+          if [ "$LOGS" -gt 0 ]; then
+            echo "::warning::Found $LOGS console.log statements in index.html"
+          fi
+
+          echo "Auto-fixes applied: $FIXED"
+
+      - name: Create fix commit
+        if: success()
+        run: |
+          git config user.name "AI Agent"
+          git config user.email "ai-agent@holybible-as[bot]"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "🤖 Auto-fix: trailing whitespace, missing semicolons"
+            git push
+            echo "committed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No fixes needed"
+          fi
+
+  pr-summary:
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate PR summary
+        if: env.HAS_OPENAI_KEY == 'true'
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD --stat 2>/dev/null)
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null)
+          COMMITS=$(git log origin/${{ github.base_ref }}...HEAD --oneline 2>/dev/null)
+
+          node -e "
+            const https = require('https');
+            const fs = require('fs');
+
+            const prompt = \`You are generating a PR description for a Bible web app (Holy Bible A.S).
+            Generate a clear, concise PR description in markdown.
+
+            Commits:
+            ${COMMITS || 'N/A'}
+
+            Changed files:
+            ${FILES || 'N/A'}
+
+            Diff stats:
+            ${DIFF || 'N/A'}
+
+            Format as:
+            ## What Changed
+            (1-3 bullet points)
+
+            ## Why
+            (1-2 sentences)
+
+            ## Testing
+            (how to verify)\`;
+
+            const body = JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: 600,
+              temperature: 0.3
+            });
+
+            const req = https.request({
+              hostname: 'api.openai.com',
+              path: '/v1/chat/completions',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+              }
+            }, (res) => {
+              let data = '';
+              res.on('data', chunk => data += chunk);
+              res.on('end', () => {
+                try {
+                  const result = JSON.parse(data);
+                  fs.writeFileSync('pr_body.md', result.choices[0].message.content);
+                  console.log('PR summary generated');
+                } catch(e) {
+                  fs.writeFileSync('pr_body.md', '');
+                }
+              });
+            });
+            req.on('error', () => fs.writeFileSync('pr_body.md', ''));
+            req.write(body);
+            req.end();
+          "
+
+      - name: Update PR body
+        if: env.HAS_OPENAI_KEY == 'true' && success()
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f pr_body.md ] && [ -s pr_body.md ]; then
+            BODY=$(cat pr_body.md)
+            curl -s -X PATCH \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" \
+              -d "$(jq -n --arg body "$BODY" '{body: $body}')"
+            echo "PR description updated"
+          fi
+
+      - name: Skip summary (no API key)
+        if: env.HAS_OPENAI_KEY != 'true'
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: echo "::notice::PR summary skipped. Add OPENAI_API_KEY secret to enable."
+
+  chat-agent:
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@ai')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: AI Chat Response
+        if: env.HAS_OPENAI_KEY == 'true'
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          COMMENT: ${{ github.event.comment.body }}
+        run: |
+          node -e "
+            const https = require('https');
+
+            const comment = process.env.COMMENT.replace(/@ai\s*/i, '');
+
+            const prompt = \`You are an AI assistant for the Holy Bible A.S project - a Bible audio sync web app.
+            The user is asking in a GitHub issue/comment:
+
+            \${comment}
+
+            Context: The app has 60+ Bible translations, TTS, audio sync, Strong's/Thayer's/BDB/Vine's/Easton's/Smith's/Fausset's/Hitchcock's/JFB/Gill's dictionaries, interlinear mode, dyslexia features, parallel reading, bookmarks, and keyboard shortcuts.
+
+            Answer concisely and helpfully. If the question is about code, reference specific files (index.html, data/*.js). Use markdown.\`;
+
+            const body = JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: 800,
+              temperature: 0.5
+            });
+
+            const req = https.request({
+              hostname: 'api.openai.com',
+              path: '/v1/chat/completions',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+              }
+            }, (res) => {
+              let data = '';
+              res.on('data', chunk => data += chunk);
+              res.on('end', () => {
+                try {
+                  const result = JSON.parse(data);
+                  const answer = '🤖 **AI Agent**\\n\\n' + result.choices[0].message.content;
+                  require('fs').writeFileSync('response.md', answer);
+                } catch(e) {
+                  require('fs').writeFileSync('response.md', '');
+                }
+              });
+            });
+            req.on('error', () => require('fs').writeFileSync('response.md', ''));
+            req.write(body);
+            req.end();
+          "
+
+      - name: Post response
+        if: env.HAS_OPENAI_KEY == 'true' && success()
+        env:
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f response.md ] && [ -s response.md ]; then
+            RESPONSE=$(cat response.md)
+            curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+              -d "$(jq -n --arg body "$RESPONSE" '{body: $body}')"
+          fi
