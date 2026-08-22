@@ -44,6 +44,14 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Prepare frontend assets
+        shell: bash
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp index.html dist/
+          cp -R data audio dist/
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
@@ -124,6 +132,14 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Prepare frontend assets
+        shell: bash
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp index.html dist/
+          cp -R data audio dist/
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
@@ -164,6 +180,14 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm install
+
+      - name: Prepare frontend assets
+        shell: bash
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp index.html dist/
+          cp -R data audio dist/
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -213,6 +237,14 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm install
+
+      - name: Prepare frontend assets
+        shell: bash
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp index.html dist/
+          cp -R data audio dist/
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
