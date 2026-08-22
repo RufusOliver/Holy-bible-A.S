@@ -1,0 +1,119 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build AppImage
+        run: npm run build:linux
+
+      - name: Get version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Holy Bible A.S ${{ steps.version.outputs.tag }}"
+          body: |
+            ## Holy Bible A.S ${{ steps.version.outputs.tag }}
+
+            ### Download
+            - **Linux AppImage**: `Holy-Bible-A.S-${{ steps.version.outputs.tag }}.AppImage` — works on any Linux distro
+            - **Windows installer**: See Windows build below
+            - **macOS DMG**: See Mac build below
+
+            ### Features
+            - 60+ Bible translations
+            - TTS audiobook with verse highlighting
+            - Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, Gill's dictionaries
+            - Interlinear mode with Greek/Hebrew
+            - Dyslexia-friendly mode with OpenDyslexic font
+            - Parallel reading (3-way)
+            - Bookmarks & storage sync
+            - Keyboard shortcuts
+
+            ### Linux AppImage
+            ```bash
+            chmod +x Holy-Bible-A.S-*.AppImage
+            ./Holy-Bible-A.S-*.AppImage
+            ```
+          files: |
+            dist/*.AppImage
+          draft: false
+          prerelease: false
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Windows installer
+        run: npx electron-builder --win nsis
+
+      - name: Get version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/*.exe
+          draft: false
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build DMG
+        run: npx electron-builder --mac dmg
+
+      - name: Get version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/*.dmg
+          draft: false
