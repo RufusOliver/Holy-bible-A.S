@@ -51,12 +51,12 @@ jobs:
 
       - name: Get version
         id: version
+        env:
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
-          fi
+          version="${RELEASE_VERSION#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri
         run: npx tauri build
@@ -131,7 +131,12 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        env:
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          version="${RELEASE_VERSION#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri
         run: npx tauri build
@@ -167,7 +172,12 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        env:
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          version="${RELEASE_VERSION#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri
         run: npx tauri build
@@ -211,19 +221,19 @@ jobs:
 
       - name: Get version
         id: version
+        env:
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
-          fi
+          version="${RELEASE_VERSION#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri
         run: npx tauri build
 
       - name: Create Arch package
         run: |
-          VERSION="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
           PKG_NAME="holy-bible-a-s"
 
           # Find the built binary
