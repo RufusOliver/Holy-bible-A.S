@@ -1,0 +1,257 @@
+name: Auto Label
+
+on:
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  label-issue:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto label issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = (issue.title || '').toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            const text = title + ' ' + body;
+
+            const labels = [];
+
+            // Type labels
+            if (/bug|error|fix|broken|crash|not work|fail|issue/.test(text)) {
+              labels.push('bug');
+            }
+            if (/feature|add|new|enhancement|request|suggest|would be nice|can you/.test(text)) {
+              labels.push('enhancement');
+            }
+            if (/question|how|help|what|why|where|when/.test(text)) {
+              labels.push('question');
+            }
+            if (/doc|readme|typo|spelling|grammar/.test(text)) {
+              labels.push('documentation');
+            }
+            if (/performance|slow|speed|lag|optimize/.test(text)) {
+              labels.push('performance');
+            }
+            if (/security|xss|vulnerab|exploit/.test(text)) {
+              labels.push('security');
+            }
+
+            // Component labels
+            if (/audio|mp3|sound|music|play|tts|speech|voice/.test(text)) {
+              labels.push('audio');
+            }
+            if (/dictionary|strong|thayer|bdb|vine|easton|smith|fausset|hitchcock|jfb|gill|lexicon/.test(text)) {
+              labels.push('dictionary');
+            }
+            if (/ui|css|style|theme|color|font|layout|design|display/.test(text)) {
+              labels.push('ui');
+            }
+            if (/translation|version|bible|kjv|niv|esv|asv|hebrew|greek/.test(text)) {
+              labels.push('translations');
+            }
+            if (/dyslexia|accessibility|a11y|screen reader/.test(text)) {
+              labels.push('accessibility');
+            }
+            if (/bookmark|save|storage|localStorage|state/.test(text)) {
+              labels.push('bookmarks');
+            }
+            if (/interlinear|strongs number|gloss/.test(text)) {
+              labels.push('interlinear');
+            }
+            if (/parallel|split|multi|pane/.test(text)) {
+              labels.push('parallel');
+            }
+            if (/keyboard|shortcut|hotkey|key bind/.test(text)) {
+              labels.push('keyboard');
+            }
+            if (/ci|action|workflow|deploy|github page/.test(text)) {
+              labels.push('ci/cd');
+            }
+            if (/mobile|android|ios|phone|responsive/.test(text)) {
+              labels.push('mobile');
+            }
+
+            // Priority labels
+            if (/urgent|critical|important|asap|blocking/.test(text)) {
+              labels.push('priority: high');
+            }
+            if (/nice to have|low priority|minor|cosmetic/.test(text)) {
+              labels.push('priority: low');
+            }
+
+            if (labels.length === 0) {
+              labels.push('triage');
+            }
+
+            // Ensure labels exist
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label
+                });
+              } catch {
+                const colors = {
+                  'bug': 'd73a4a', 'enhancement': 'a2eeef', 'question': 'd876e3',
+                  'documentation': '0075ca', 'performance': 'fbca04', 'security': 'e11d48',
+                  'audio': '006b75', 'dictionary': '1d76db', 'ui': 'c5def5',
+                  'translations': '0e8a16', 'accessibility': 'e4e669', 'bookmarks': 'bfd4f2',
+                  'interlinear': 'd4c5f9', 'parallel': 'c2e0c6', 'keyboard': 'bfdadc',
+                  'ci/cd': '0075ca', 'mobile': 'f9d0c4', 'triage': 'ededed',
+                  'priority: high': 'b60205', 'priority: low': '0e8a16'
+                };
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                  color: colors[label] || 'ededed'
+                });
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: labels
+            });
+
+            console.log('Issue #' + issue.number + ' labeled: ' + labels.join(', '));
+
+  label-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Auto label PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = (pr.title || '').toLowerCase();
+            const body = (pr.body || '').toLowerCase();
+            const text = title + ' ' + body;
+
+            // Get changed files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100
+            });
+
+            const paths = files.map(f => f.filename.toLowerCase());
+            const allPaths = paths.join(' ');
+            const labels = [];
+
+            // Type labels
+            if (/^(fix|bug)/i.test(pr.title) || /fix(es|ed|ing)?\s/i.test(text)) {
+              labels.push('bug');
+            }
+            if (/^(feat|add|new|enhance)/i.test(pr.title) || /add(s|ed|ing)?\s|new\s/i.test(text)) {
+              labels.push('enhancement');
+            }
+            if (/refactor|clean|reorganiz/i.test(text)) {
+              labels.push('refactor');
+            }
+            if (/docs?|readme|typo/i.test(text)) {
+              labels.push('documentation');
+            }
+            if (/test|spec/i.test(text)) {
+              labels.push('tests');
+            }
+            if (/dependabot|bump|update.*dep/i.test(text) || paths.some(p => p.includes('package'))) {
+              labels.push('dependencies');
+            }
+
+            // Component labels based on files
+            if (allPaths.includes('audio') || allPaths.includes('.mp3')) {
+              labels.push('audio');
+            }
+            if (allPaths.includes('dict') || allPaths.includes('lexicon') || allPaths.includes('strongs') ||
+                allPaths.includes('bdb') || allPaths.includes('vines') || allPaths.includes('faussets') ||
+                allPaths.includes('eastons') || allPaths.includes('smiths') || allPaths.includes('hitchcocks') ||
+                allPaths.includes('jfb') || allPaths.includes('gills') || allPaths.includes('thayer')) {
+              labels.push('dictionary');
+            }
+            if (allPaths.includes('index.html') || allPaths.includes('.css')) {
+              labels.push('ui');
+            }
+            if (allPaths.includes('data/') && !allPaths.includes('dict') && !allPaths.includes('strongs')) {
+              labels.push('translations');
+            }
+            if (allPaths.includes('ci') || allPaths.includes('workflow') || allPaths.includes('.github')) {
+              labels.push('ci/cd');
+            }
+            if (/dyslexia|accessibility/i.test(text)) {
+              labels.push('accessibility');
+            }
+            if (/interlinear|strongs number/i.test(text)) {
+              labels.push('interlinear');
+            }
+
+            // Size label
+            const additions = pr.additions || 0;
+            const deletions = pr.deletions || 0;
+            const total = additions + deletions;
+            if (total > 1000) {
+              labels.push('size: large');
+            } else if (total > 100) {
+              labels.push('size: medium');
+            } else {
+              labels.push('size: small');
+            }
+
+            if (labels.length === 0) {
+              labels.push('triage');
+            }
+
+            // Ensure labels exist
+            const colors = {
+              'bug': 'd73a4a', 'enhancement': 'a2eeef', 'refactor': 'ededed',
+              'documentation': '0075ca', 'tests': 'bfd4f2', 'dependencies': '0366d6',
+              'audio': '006b75', 'dictionary': '1d76db', 'ui': 'c5def5',
+              'translations': '0e8a16', 'ci/cd': '0075ca', 'accessibility': 'e4e669',
+              'interlinear': 'd4c5f9', 'triage': 'ededed',
+              'size: large': 'b60205', 'size: medium': 'fbca04', 'size: small': '0e8a16'
+            };
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label
+                });
+              } catch {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                  color: colors[label] || 'ededed'
+                });
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: labels
+            });
+
+            console.log('PR #' + pr.number + ' labeled: ' + labels.join(', '));
