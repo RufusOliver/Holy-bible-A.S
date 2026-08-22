@@ -1,0 +1,90 @@
+name: Bug Report
+description: Report a bug in Holy Bible A.S
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Thanks for taking the time to report a bug!
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: What part of the app is affected?
+      options:
+        - Audio playback
+        - TTS / Audiobook
+        - Bible text / Translations
+        - Dictionary (Strong's, Thayer's, BDB, etc.)
+        - Interlinear / Strong's numbers
+        - Bookmarks
+        - Parallel reading
+        - Dyslexia mode
+        - UI / Layout
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly.
+      placeholder: "When I click on..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      placeholder: |
+        1. Select KJV version
+        2. Go to John 3
+        3. Click on verse 16
+        4. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - Desktop
+        - Laptop
+        - Tablet
+        - Phone
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, console errors, or anything else helpful.
