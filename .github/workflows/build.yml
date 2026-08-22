@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   build-appimage:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -75,8 +75,8 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Build Tauri
-        run: npx tauri build
+      - name: Build AppImage
+        run: npx tauri build --bundles appimage
 
       - name: Find AppImage
         id: find
@@ -110,7 +110,7 @@ jobs:
           echo "Download from [Artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
   build-deb-rpm:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
