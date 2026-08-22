@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate JS syntax
+        run: |
+          echo "Checking index.html JS..."
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const scripts = html.match(/<script>([\s\S]*?)<\/script>/g) || [];
+            let allOk = true;
+            scripts.forEach((s, i) => {
+              const code = s.replace(/<\/?script>/g, '');
+              try {
+                new Function(code);
+                console.log('Script block ' + (i+1) + ': OK');
+              } catch(e) {
+                console.error('Script block ' + (i+1) + ': SYNTAX ERROR - ' + e.message);
+                allOk = false;
+              }
+            });
+            if (!allOk) process.exit(1);
+            console.log('All JS syntax checks passed!');
+          "
+
+      - name: Validate data files syntax
+        run: |
+          errors=0
+          for f in data/*.js; do
+            if ! node -e "new Function(require('fs').readFileSync('$f','utf8'))" 2>/dev/null; then
+              echo "SYNTAX ERROR in $f"
+              errors=$((errors + 1))
+            fi
+          done
+          echo "Checked data files. Errors: $errors"
+          if [ $errors -gt 0 ]; then exit 1; fi
+
+      - name: Check HTML structure
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const checks = [
+              [/<html/i, 'html tag'],
+              [/<head/i, 'head tag'],
+              [/<body/i, 'body tag'],
+              [/<\/html>/i, 'closing html'],
+              [/<\/body>/i, 'closing body'],
+              [/id=\"verses-container\"/, 'verses-container'],
+              [/id=\"versionSelect\"/, 'versionSelect'],
+              [/id=\"bookSelect\"/, 'bookSelect'],
+              [/id=\"chapterSelect\"/, 'chapterSelect'],
+              [/id=\"audioFileInput\"/, 'audioFileInput'],
+              [/id=\"ttsPlayBtn\"/, 'ttsPlayBtn'],
+              [/id=\"dyslexiaBtn\"/, 'dyslexiaBtn'],
+              [/data\/nestle1904\.js/, 'nestle1904.js loaded'],
+              [/data\/strongs\.js/, 'strongs.js loaded'],
+              [/data\/lexicon\.js/, 'lexicon.js loaded'],
+            ];
+            let ok = true;
+            checks.forEach(([re, label]) => {
+              if (!re.test(html)) {
+                console.error('MISSING: ' + label);
+                ok = false;
+              } else {
+                console.log('OK: ' + label);
+              }
+            });
+            if (!ok) process.exit(1);
+            console.log('HTML structure validation passed!');
+          "
+
+      - name: Report file counts
+        run: |
+          echo "Data files: $(ls data/*.js | wc -l)"
+          echo "Audio files: $(find audio -name '*.mp3' 2>/dev/null | wc -l)"
+          echo "Index.html size: $(wc -c < index.html) bytes"
