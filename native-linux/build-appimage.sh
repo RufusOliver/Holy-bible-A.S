@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 BUILD_DIR="${RUNNER_TEMP:-/tmp}/holy-bible-a-s-appimage"
 APP_DIR="$BUILD_DIR/AppDir"
-OUTPUT_DIR="$ROOT_DIR/native-linux/appimage"
+OUTPUT_DIR="$ROOT_DIR/releases"
 LINUXDEPLOY="$BUILD_DIR/linuxdeploy-x86_64.AppImage"
 ICON="$BUILD_DIR/holy-bible-a-s.svg"
 

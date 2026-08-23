@@ -50,10 +50,10 @@ jobs:
       - name: Find AppImage
         id: find
         run: |
-          APPIMAGE=$(find native-linux/appimage -maxdepth 1 -name "*.AppImage" | head -1)
+          APPIMAGE=$(find releases -maxdepth 1 -name "*.AppImage" | head -1)
           if [ -z "$APPIMAGE" ]; then
             echo "No AppImage found"
-            ls -R native-linux/appimage/
+            ls -R releases/
             exit 1
           fi
           echo "path=$APPIMAGE" >> "$GITHUB_OUTPUT"
