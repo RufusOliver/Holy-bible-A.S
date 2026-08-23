@@ -10,116 +10,47 @@ permissions:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            file
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm install
 
-      - name: Build Electron for Linux
-        run: npx electron-builder --linux dir
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
 
       - name: Get version
         id: version
         run: echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
 
-      - name: Build native AppImage
-        run: |
-          VERSION="${{ steps.version.outputs.tag }}"
-          APP_NAME="holy-bible-a-s"
-          DISPLAY_NAME="Holy Bible A.S"
+      - name: Build Tauri
+        run: npx tauri build
 
-          # Download appimagetool
-          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
-
-          # Create AppDir structure
-          APPDIR="AppDir"
-          rm -rf "$APPDIR"
-          mkdir -p "$APPDIR/usr/bin"
-          mkdir -p "$APPDIR/usr/share/applications"
-          mkdir -p "$APPDIR/usr/share/icons/hicolor/512x512/apps"
-          mkdir -p "$APPDIR/usr/lib/${APP_NAME}"
-          mkdir -p "$APPDIR/opt/${APP_NAME}"
-
-          # Copy electron build
-          cp -r dist/linux-unpacked/* "$APPDIR/opt/${APP_NAME}/"
-
-          # Copy data, audio, index.html into opt
-          cp index.html "$APPDIR/opt/${APP_NAME}/"
-          cp -r data "$APPDIR/opt/${APP_NAME}/"
-          if [ -d audio ]; then
-            cp -r audio "$APPDIR/opt/${APP_NAME}/"
-          fi
-
-          # Create launcher
-          cat > "$APPDIR/usr/bin/${APP_NAME}" << 'EOF'
-          #!/bin/bash
-          DIR="$(cd "$(dirname "$0")" && pwd)"
-          exec "${DIR}/../lib/${APP_NAME}/holy-bible-a-s" "$@"
-          EOF
-          chmod +x "$APPDIR/usr/bin/${APP_NAME}"
-
-          # Symlink for AppImage
-          ln -sf "$APPDIR/usr/bin/${APP_NAME}" "$APPDIR/${APP_NAME}"
-
-          # Desktop file
-          cat > "$APPDIR/usr/share/applications/${APP_NAME}.desktop" << 'EOF'
-          [Desktop Entry]
-          Name=Holy Bible A.S
-          GenericName=Bible Audio Sync
-          Comment=60+ translations, TTS, dictionaries, accessibility
-          Exec=holy-bible-a-s %U
-          Icon=holy-bible-a-s
-          Terminal=false
-          Type=Application
-          Categories=Education;Religion;Audio;
-          Keywords=bible;audio;sync;kjv;niv;esv;tspeech;
-          StartupWMClass=holy-bible-a-s
-          MimeType=application/x-holy-bible;
-          EOF
-
-          # Symlink desktop file
-          ln -sf "$APPDIR/usr/share/applications/${APP_NAME}.desktop" "$APPDIR/${APP_NAME}.desktop"
-
-          # Icon - create from SVG
-          cat > "/tmp/icon.svg" << 'SVG'
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-            <rect width="512" height="512" rx="64" fill="#0a1f0a"/>
-            <rect x="224" y="48" width="64" height="416" rx="8" fill="#ffffff"/>
-            <rect x="128" y="160" width="256" height="64" rx="8" fill="#ffffff"/>
-            <text x="256" y="480" text-anchor="middle" fill="#4caf50" font-family="serif" font-size="36" font-weight="bold">HOLY BIBLE</text>
-          </svg>
-          SVG
-
-          # Convert SVG to PNG using ImageMagick if available
-          if command -v convert &> /dev/null; then
-            convert -size 512x512 "/tmp/icon.svg" "$APPDIR/usr/share/icons/hicolor/512x512/apps/${APP_NAME}.png"
-          elif [ -f icon.png ]; then
-            cp icon.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/${APP_NAME}.png"
-          fi
-          ln -sf "$APPDIR/usr/share/icons/hicolor/512x512/apps/${APP_NAME}.png" "$APPDIR/${APP_NAME}.png"
-
-          # Build AppImage
-          ARCH=x86_64 ./appimagetool "$APPDIR" "${DISPLAY_NAME}-${VERSION}-x86_64.AppImage"
-
-          echo "AppImage built:"
-          ls -lh *.AppImage
-
-      - name: Build portable tar.gz
-        run: |
-          VERSION="${{ steps.version.outputs.tag }}"
-          tar -czf "Holy-Bible-A.S-${VERSION}-linux-x86_64.tar.gz" -C dist linux-unpacked
-          echo "Portable tar.gz built:"
-          ls -lh *.tar.gz
-
-      - name: Upload AppImage to Release
+      - name: Upload AppImage
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -128,11 +59,11 @@ jobs:
             ## Holy Bible A.S ${{ steps.version.outputs.tag }}
 
             ### Downloads
-            - **Linux AppImage** (recommended): `Holy-Bible-A.S-*.AppImage` — runs on any Linux, integrates with desktop
-            - **Linux portable**: `Holy-Bible-A.S-*-linux-x86_64.tar.gz` — extract and run
-            - **Arch Linux**: `holy-bible-a-s-*-x86_64.pkg.tar.zst` — native pacman package
-            - **Windows**: `Holy-Bible-A.S Setup.exe`
-            - **macOS**: `Holy-Bible-A.S.dmg`
+            - **Linux AppImage**: `Holy-Bible-A.S-*-x86_64.AppImage` — runs on any Linux distro (~10-15 MB)
+            - **Linux .deb**: `holy-bible-a-s_*_amd64.deb` — Debian/Ubuntu/Mint
+            - **Linux .rpm**: `holy-bible-a-s-*.x86_64.rpm` — Fedora/RHEL/CentOS
+            - **Windows**: `Holy-Bible-A.S_*_x64-setup.exe`
+            - **macOS**: `Holy-Bible-A.S_*.dmg`
 
             ### Features
             - 60+ Bible translations
@@ -144,28 +75,100 @@ jobs:
             - Bookmarks & storage sync
             - Keyboard shortcuts
 
-            ### Linux AppImage
+            ### Linux AppImage (~10 MB)
             ```bash
             chmod +x Holy-Bible-A.S-*.AppImage
             ./Holy-Bible-A.S-*.AppImage
             ```
 
-            ### Linux Portable
+            ### Debian/Ubuntu
             ```bash
-            tar -xzf Holy-Bible-A.S-*-linux-x86_64.tar.gz
-            cd linux-unpacked
-            ./holy-bible-a-s
+            sudo dpkg -i holy-bible-a-s_*.deb
             ```
 
-            ### Arch Linux
+            ### Fedora/RHEL
             ```bash
-            sudo pacman -U holy-bible-a-s-*-x86_64.pkg.tar.zst
+            sudo rpm -i holy-bible-a-s-*.rpm
             ```
           files: |
-            *.AppImage
-            *.tar.gz
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
           draft: false
           prerelease: false
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Get version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build Tauri
+        run: npx tauri build
+
+      - name: Upload Windows installer
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            src-tauri/target/release/bundle/nsis/*.exe
+          draft: false
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Get version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build Tauri
+        run: npx tauri build
+
+      - name: Upload macOS DMG
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app
+          draft: false
 
   build-arch:
     runs-on: ubuntu-latest
@@ -175,7 +178,10 @@ jobs:
       - name: Install base tools
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm git nodejs npm base-devel
+          pacman -S --noconfirm git nodejs npm base-devel rust webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg patchelf openssl
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - uses: actions/checkout@v4
 
@@ -184,145 +190,87 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm install
 
-      - name: Build Electron for Linux
-        run: npx electron-builder --linux dir
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
 
       - name: Get version
         id: version
         run: echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
 
-      - name: Create Arch package structure
+      - name: Build Tauri
+        run: npx tauri build
+
+      - name: Create Arch package
         run: |
           VERSION="${{ steps.version.outputs.tag }}"
           PKG_NAME="holy-bible-a-s"
-          PKG_DIR="${PKG_NAME}-${VERSION}"
 
-          # Create package directory structure
+          # Find the built binary
+          BINARY=$(find src-tauri/target/release -maxdepth 1 -name "holy-bible-a-s" -type f | head -1)
+          if [ -z "$BINARY" ]; then
+            echo "Binary not found, trying alternative name..."
+            BINARY=$(find src-tauri/target/release -maxdepth 1 -type f -executable | head -1)
+          fi
+
+          if [ -z "$BINARY" ]; then
+            echo "ERROR: No binary found"
+            ls -la src-tauri/target/release/
+            exit 1
+          fi
+
+          echo "Found binary: $BINARY"
+          file "$BINARY"
+
+          PKG_DIR="${PKG_NAME}-${VERSION}"
           mkdir -p "${PKG_DIR}/opt/${PKG_NAME}"
           mkdir -p "${PKG_DIR}/usr/bin"
           mkdir -p "${PKG_DIR}/usr/share/applications"
           mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/512x512/apps"
 
-          # Copy electron build output
-          cp -r dist/linux-unpacked/* "${PKG_DIR}/opt/${PKG_NAME}/"
+          cp "$BINARY" "${PKG_DIR}/opt/${PKG_NAME}/"
 
-          # Create launcher script
-          cat > "${PKG_DIR}/usr/bin/${PKG_NAME}" << 'LAUNCHER'
+          cat > "${PKG_DIR}/usr/bin/${PKG_NAME}" << 'EOF'
           #!/bin/bash
           exec /opt/holy-bible-a-s/holy-bible-a-s "$@"
-          LAUNCHER
+          EOF
           chmod +x "${PKG_DIR}/usr/bin/${PKG_NAME}"
 
-          # Create .desktop file
-          cat > "${PKG_DIR}/usr/share/applications/${PKG_NAME}.desktop" << 'DESKTOP'
+          cat > "${PKG_DIR}/usr/share/applications/${PKG_NAME}.desktop" << 'EOF'
           [Desktop Entry]
           Name=Holy Bible A.S
-          Comment=Bible Audio Sync with 60+ translations, TTS, dictionaries
+          GenericName=Bible Audio Sync
+          Comment=60+ translations, TTS, dictionaries
           Exec=/opt/holy-bible-a-s/holy-bible-a-s %U
           Icon=holy-bible-a-s
           Terminal=false
           Type=Application
-          Categories=Education;Religion;
-          StartupWMClass=holy-bible-a-s
-          DESKTOP
+          Categories=Education;Religion;Audio;
+          EOF
 
-          # Copy icon if exists
-          if [ -f icon.png ]; then
-            cp icon.png "${PKG_DIR}/usr/share/icons/hicolor/512x512/apps/${PKG_NAME}.png"
-          fi
-
-          # Create .PKGINFO
           cat > "${PKG_DIR}/.PKGINFO" << PKGINFO
-          # Generated by Holy Bible A.S GitHub Actions
           pkgname = ${PKG_NAME}
           pkgver = ${VERSION}-1
-          pkgdesc = Bible Audio Sync with 60+ translations, TTS, dictionaries, and accessibility features
+          pkgdesc = Bible Audio Sync with 60+ translations, TTS, dictionaries
           url = https://github.com/RufusOliver/Holy-bible-A.S
           arch = x86_64
           license = MIT
-          depends = electron
+          depends = webkit2gtk-4.1 gtk3
           PKGINFO
 
-          # Create .INSTALL file
-          cat > "${PKG_DIR}/.INSTALL" << 'INSTALL'
-          post_install() {
-            echo "Holy Bible A.S installed to /opt/holy-bible-a-s/"
-            echo "Run with: holy-bible-a-s"
-            echo "Or find it in your application menu under Education > Religion"
-          }
-          INSTALL
-
-          # Create tar.zst package
           cd "${PKG_DIR}"
           tar --zstd -cf "../${PKG_NAME}-${VERSION}-x86_64.pkg.tar.zst" .
           cd ..
-
-          echo "Package created: ${PKG_NAME}-${VERSION}-x86_64.pkg.tar.zst"
           ls -lh *.pkg.tar.zst
 
-      - name: Upload to Release
+      - name: Upload Arch package
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
             *.pkg.tar.zst
-          draft: false
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Windows installer
-        run: npx electron-builder --win nsis
-
-      - name: Get version
-        id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            dist/*.exe
-          draft: false
-
-  build-mac:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build DMG
-        run: npx electron-builder --mac dmg
-
-      - name: Get version
-        id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            dist/*.dmg
           draft: false
