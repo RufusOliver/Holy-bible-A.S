@@ -9,12 +9,5 @@
     "type": "git",
     "url": "https://github.com/RufusOliver/Holy-bible-A.S.git"
   },
-  "scripts": {
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2"
-  }
+  "scripts": {}
 }
