@@ -7,6 +7,7 @@ on:
       - 'index.html'
       - 'data/**'
       - 'audio/**'
+      - 'native-linux/**'
       - 'src-tauri/**'
       - 'package.json'
       - 'package-lock.json'
@@ -17,6 +18,7 @@ on:
       - 'index.html'
       - 'data/**'
       - 'audio/**'
+      - 'native-linux/**'
       - 'src-tauri/**'
       - 'package.json'
       - 'package-lock.json'
@@ -37,9 +39,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -50,6 +49,8 @@ jobs:
             librsvg2-dev \
             patchelf \
             libssl-dev \
+            gcc \
+            pkg-config \
             file
 
       - name: Setup Node.js
@@ -70,21 +71,16 @@ jobs:
           cp index.html dist/
           cp -R data audio dist/
 
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
       - name: Build AppImage
-        run: npx tauri build --bundles appimage
+        run: bash native-linux/build-appimage.sh
 
       - name: Find AppImage
         id: find
         run: |
-          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          APPIMAGE=$(find native-linux/appimage -maxdepth 1 -name "*.AppImage" | head -1)
           if [ -z "$APPIMAGE" ]; then
             echo "No AppImage found"
-            ls -R src-tauri/target/release/bundle/
+            ls -R native-linux/appimage/
             exit 1
           fi
           echo "path=$APPIMAGE" >> $GITHUB_OUTPUT
