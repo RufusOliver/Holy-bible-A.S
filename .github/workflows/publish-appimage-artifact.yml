@@ -1,0 +1,61 @@
+name: Publish AppImage Artifact to Release
+
+"on":
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing Git tag to publish to (for example, v1.0.12)"
+        required: true
+        type: string
+      run_id:
+        description: "Actions run ID that contains the AppImage artifact"
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Validate tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use the vMAJOR.MINOR.PATCH format: $TAG"
+            exit 1
+          fi
+
+      - name: Download AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Holy-Bible-A.S-Linux-x86_64
+          path: release-assets
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify AppImage
+        run: |
+          APPIMAGE=$(find release-assets -maxdepth 1 -type f -name '*.AppImage' | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "The artifact does not contain an AppImage"
+            find release-assets -maxdepth 2 -type f -print
+            exit 1
+          fi
+          file "$APPIMAGE"
+          chmod +x "$APPIMAGE"
+
+      - name: Publish AppImage to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release create "$TAG" release-assets/*.AppImage \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Holy Bible A.S $TAG" \
+            --verify-tag \
+            --generate-notes

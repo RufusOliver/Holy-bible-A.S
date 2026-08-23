@@ -47,6 +47,15 @@ Build from the repository root:
 
 The generated AppImage is written to [`releases/`](releases/). The script downloads the current `linuxdeploy` binary during the build.
 
+## Publish an existing artifact
+
+The `Publish AppImage Artifact to Release` GitHub Actions workflow can attach an AppImage from a completed build run to an existing version tag. Run it from the repository's **Actions** tab and provide:
+
+- `tag`: an existing tag in `vMAJOR.MINOR.PATCH` format
+- `run_id`: the Actions run ID containing the `Holy-Bible-A.S-Linux-x86_64` artifact
+
+The workflow verifies the artifact contains an AppImage before publishing it to the GitHub Release for that tag.
+
 ## Features
 
 - Browse Bible books, chapters, and translations
