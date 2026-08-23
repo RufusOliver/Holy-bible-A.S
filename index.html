@@ -1392,7 +1392,7 @@ async function loadChapter() {
   try {
     data = await fetchChapter(currentBook, currentChapter);
   } catch (err) {
-    versesContainer.innerHTML = `<div class="hint">Error: cannot load chapter - ${err.message}</div>`;
+    versesContainer.innerHTML = `<div class="hint">Error: cannot load chapter - ${escHtml(err.message)}</div>`;
     statusEl.textContent = `Error: ${err.message}`;
     return;
   }
@@ -1491,12 +1491,12 @@ function verseMarkup(v, i, primary, version) {
     const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
     wordIdx++;
     const sn = (il && il[0]) ? il[0] : lookupStrongs(tok);
-    const snAttr = sn ? ` data-sn="${sn}"` : '';
-    let inner = tok;
+    const snAttr = sn ? ` data-sn="${escHtml(sn)}"` : '';
+    let inner = escHtml(tok);
     if (il && (il[0] || il[1])) {
-      inner = `<span class="sn">${il[0] || sn || ''}</span>${tok}${il[1] ? `<span class="en">${il[1]}</span>` : ''}`;
+      inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(tok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
     } else if (showSn && sn) {
-      inner = `<span class="sn">${sn}</span>${tok}`;
+      inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(tok)}`;
     }
     return `<span class="w" data-i="${ti}"${snAttr}>${inner}</span>`;
   })()).join('');
@@ -2054,7 +2054,7 @@ dictOverlay.querySelectorAll('.dict-tab').forEach(tab => {
 });
 
 function escHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 const DICT_SOURCES = {
