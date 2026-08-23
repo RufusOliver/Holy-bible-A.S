@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
 
 permissions:
   contents: write
@@ -45,7 +51,12 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
+          fi
 
       - name: Build Tauri
         run: npx tauri build
@@ -200,7 +211,12 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
+          fi
 
       - name: Build Tauri
         run: npx tauri build
