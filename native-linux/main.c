@@ -1,8 +1,6 @@
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 #include <limits.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 static gchar *resource_path(void) {
@@ -21,6 +19,55 @@ static gchar *resource_path(void) {
     }
 
     return g_build_filename(g_get_current_dir(), "dist", "index.html", NULL);
+}
+
+/* Inside the AppImage the WebKit helper processes are located through a
+ * relative path (././lib/webkit2gtk-4.1, patched into the bundled
+ * libwebkit2gtk at build time) that resolves against the process working
+ * directory, and the bundled GIO TLS modules are off the default search
+ * path. Chdir into the image's usr/ directory and export the library paths
+ * before any GTK or WebKit call. No-op when not running from the bundle. */
+static void relocate_bundled_layout(void) {
+    gchar executable[PATH_MAX];
+    ssize_t length = readlink("/proc/self/exe", executable, sizeof(executable) - 1);
+
+    if (length <= 0) return;
+    executable[length] = '\0';
+
+    gchar *bin_dir = g_path_get_dirname(executable);
+    gchar *usr_dir = g_build_filename(bin_dir, "..", NULL);
+    g_free(bin_dir);
+
+    gchar *real = realpath(usr_dir, NULL);
+    g_free(usr_dir);
+    if (real == NULL) return;
+
+    gchar *helpers = g_build_filename(real, "lib", "webkit2gtk-4.1", NULL);
+    if (!g_file_test(helpers, G_FILE_TEST_IS_DIR)) {
+        g_free(helpers);
+        free(real);
+        return;
+    }
+    g_free(helpers);
+
+    chdir(real);
+
+    gchar *lib_dir = g_build_filename(real, "lib", NULL);
+    const gchar *existing = g_getenv("LD_LIBRARY_PATH");
+    gchar *combined = g_strconcat(lib_dir, ":",
+                                  existing != NULL ? existing : "",
+                                  NULL);
+    g_setenv("LD_LIBRARY_PATH", combined, TRUE);
+    g_free(combined);
+
+    gchar *gio_modules = g_build_filename(lib_dir, "gio", "modules", NULL);
+    g_free(lib_dir);
+    if (g_file_test(gio_modules, G_FILE_TEST_IS_DIR)) {
+        g_setenv("GIO_MODULE_DIR", gio_modules, TRUE);
+    }
+    g_free(gio_modules);
+
+    free(real);
 }
 
 static void activate(GtkApplication *application, gpointer user_data) {
@@ -44,6 +91,7 @@ static void activate(GtkApplication *application, gpointer user_data) {
 }
 
 int main(int argc, char **argv) {
+    relocate_bundled_layout();
     GtkApplication *application = gtk_application_new(
         "com.holybible.app", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(application, "activate", G_CALLBACK(activate), NULL);

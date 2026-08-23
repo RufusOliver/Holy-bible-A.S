@@ -32,11 +32,18 @@ The native application uses GTK 3 and WebKitGTK 4.1. Install the build dependenc
 - GTK 3 development files
 - WebKitGTK 4.1 development files
 - `curl`
+- `python3` (patches the WebKit helper path into the bundled library)
 
 On Debian or Ubuntu, the usual packages are:
 
 ```bash
-sudo apt install build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev curl
+sudo apt install build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev curl python3
+```
+
+On Arch:
+
+```bash
+sudo pacman -S --needed base-devel gtk3 webkit2gtk-4.1 curl python3
 ```
 
 Build from the repository root:
