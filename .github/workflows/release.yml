@@ -6,34 +6,56 @@ name: Build Native Linux AppImage Release
       - 'v*'
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Install system dependencies
+      - name: Find latest successful AppImage build
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libgtk-3-dev \
-            librsvg2-dev \
-            gcc \
-            pkg-config \
-            file
+          RUN_ID=$(gh run list \
+            --workflow build.yml \
+            --branch main \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "No successful AppImage build run was found"
+            exit 1
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Build native AppImage
-        run: bash native-linux/build-appimage.sh
+      - name: Download AppImage artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ steps.build.outputs.run_id }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name Holy-Bible-A.S-Linux-x86_64 \
+            --dir release-assets
+
+      - name: Verify AppImage
+        run: |
+          APPIMAGE=$(find release-assets -maxdepth 1 -type f -name '*.AppImage' | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "The downloaded artifact does not contain an AppImage"
+            find release-assets -maxdepth 2 -type f -print
+            exit 1
+          fi
+          file "$APPIMAGE"
 
       - name: Upload release AppImage
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: "Holy Bible A.S ${{ github.ref_name }}"
-          files: releases/*.AppImage
+          files: release-assets/*.AppImage
           draft: false
           prerelease: false
