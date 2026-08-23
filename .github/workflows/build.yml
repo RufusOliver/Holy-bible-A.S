@@ -1,6 +1,6 @@
 name: Build Native Linux AppImage
 
-on:
+"on":
   push:
     branches: [main]
     paths:

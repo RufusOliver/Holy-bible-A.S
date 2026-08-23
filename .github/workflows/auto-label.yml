@@ -1,6 +1,6 @@
 name: Auto Label
 
-on:
+"on":
   issues:
     types: [opened, edited]
   pull_request:

@@ -1,6 +1,6 @@
 name: Auto Bump Patch Version
 
-on:
+"on":
   push:
     branches:
       - main
