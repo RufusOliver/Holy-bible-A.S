@@ -60,7 +60,7 @@ jobs:
           echo "name=$(basename "$APPIMAGE")" >> "$GITHUB_OUTPUT"
 
       - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Holy-Bible-A.S-Linux-x86_64
           path: ${{ steps.find.outputs.path }}
