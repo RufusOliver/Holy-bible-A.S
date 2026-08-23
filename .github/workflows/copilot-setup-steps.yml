@@ -1,0 +1,37 @@
+name: Copilot Setup Steps
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Check JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = html.match(/<script>([\s\S]*?)<\/script>/g) || [];
+          for (const [index, script] of scripts.entries()) {
+            new Function(script.replace(/<\/?script>/g, ''));
+            console.log(`Script block ${index + 1}: OK`);
+          }
+          NODE
