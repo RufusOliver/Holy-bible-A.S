@@ -174,6 +174,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <button id="deleteBookmarkBtn" title="Delete selected bookmark">&#128465;</button>
     <button id="inspireBtn" title="Pick a random verse">&#10024; Inspire Me</button>
     <button id="dyslexiaBtn" title="Toggle Dyslexia-friendly mode" style="font-weight:700;font-size:1rem;">Dy</button>
+    <button id="updateBtn" title="Check for the latest Linux AppImage">&#8595; Update</button>
     <button id="helpBtn" title="Keyboard shortcuts and help">? Help</button>
   </div>
 </header>
@@ -878,6 +879,27 @@ const parallelCb = $('parallelCb');
 const parallelBar = $('parallelBar');
 const par2Sel = $('par2Sel');
 const par3Sel = $('par3Sel');
+const updateBtn = $('updateBtn');
+
+async function checkForAppImageUpdate() {
+  const releaseUrl = 'https://api.github.com/repos/RufusOliver/Holy-bible-A.S/releases/latest';
+  try {
+    const response = await fetch(releaseUrl, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
+    const release = await response.json();
+    const asset = (release.assets || []).find(item => item.name.endsWith('.AppImage'));
+    if (!asset) throw new Error('No Linux AppImage in the latest release');
+    updateBtn.hidden = false;
+    updateBtn.textContent = `\u2193 Update ${release.tag_name}`;
+    updateBtn.onclick = () => window.open(asset.browser_download_url, '_blank', 'noopener');
+    updateBtn.setAttribute('aria-label', `Download Linux AppImage ${release.tag_name}`);
+  } catch (error) {
+    updateBtn.hidden = true;
+    console.warn('AppImage update check unavailable:', error.message);
+  }
+}
+updateBtn.hidden = true;
+checkForAppImageUpdate();
 
 // --- Save state / bookmarks ---
 // Primary storage is a user-picked folder (File System Access API) holding a
