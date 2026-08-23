@@ -1858,20 +1858,19 @@ async function autoLoadAudio() {
   if (!libriMap) return;
 
   if (ver === 'ASV') {
-    const fname = libriMap[book];
-    if (!fname) return;
-    const localPath = `${AUDIO_BASE}/asv/${fname}`;
     try {
-      const resp = await fetch(localPath, { method: 'HEAD' });
-      if (resp.ok) {
-        audio.src = localPath;
-        audio.load();
-        setVolume(volumeSlider.value);
-        statusEl.textContent = `Audio: ${book} ${chapter}`;
-        return;
-      }
-    } catch (e) {}
-    statusEl.textContent = `Run download_audio.py to get ${ver} audio files.`;
+      const files = await fetchLibrivoxFiles('englishAudioASV');
+      const slug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const bookFiles = files.filter(file => file.name.startsWith(`englishasv/${slug}/`));
+      const file = matchChapter(bookFiles, chapter);
+      if (!file) throw new Error('ASV chapter unavailable');
+      audio.src = `https://archive.org/download/englishAudioASV/${file.name.split('/').map(encodeURIComponent).join('/')}`;
+      audio.load();
+      setVolume(volumeSlider.value);
+      statusEl.textContent = `Audio: ${book} ${chapter} (streaming)`;
+    } catch (err) {
+      statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
+    }
     return;
   }
 
