@@ -1,19 +1,18 @@
-name: Build & Release
+name: Build Native Linux AppImage Release
 
 on:
   push:
     tags:
       - 'v*'
+    paths:
+      - 'index.html'
+      - 'data/**'
+      - 'audio/**'
+      - 'native-linux/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag (e.g. 1.0.0)'
-        required: true
-        default: '1.0.0'
-
-concurrency:
-  group: release-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -21,12 +20,9 @@ permissions:
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
 
       - name: Install system dependencies
         run: |
@@ -34,317 +30,19 @@ jobs:
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
             libgtk-3-dev \
-            libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf \
-            libssl-dev \
             gcc \
             pkg-config \
-            libayatana-appindicator3-dev \
             file
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Prepare frontend assets
-        shell: bash
-        run: |
-          rm -rf dist
-          mkdir -p dist
-          cp index.html dist/
-          cp -R data audio dist/
-
-      - name: Get version
-        id: version
-        env:
-          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
-        run: |
-          version="${RELEASE_VERSION#v}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Build native AppImage
         run: bash native-linux/build-appimage.sh
 
-      - name: Build native packages
-        run: npx tauri build --bundles deb,rpm
-
-      - name: Upload AppImage
+      - name: Upload release AppImage
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: "Holy Bible A.S ${{ steps.version.outputs.tag }}"
-          body: |
-            ## Holy Bible A.S ${{ steps.version.outputs.tag }}
-
-            ### Downloads
-            - **Linux AppImage**: `Holy-Bible-A.S-*-x86_64.AppImage` — runs on any Linux distro (~10-15 MB)
-            - **Linux .deb**: `holy-bible-a-s_*_amd64.deb` — Debian/Ubuntu/Mint
-            - **Linux .rpm**: `holy-bible-a-s-*.x86_64.rpm` — Fedora/RHEL/CentOS
-            - **Windows**: `Holy-Bible-A.S_*_x64-setup.exe`
-            - **macOS**: `Holy-Bible-A.S_*.dmg`
-
-            ### Features
-            - 60+ Bible translations
-            - TTS audiobook with verse highlighting
-            - 10 dictionaries: Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, Gill's
-            - Interlinear mode with Greek/Hebrew
-            - Dyslexia-friendly mode (OpenDyslexic font, reading ruler, backgrounds)
-            - Parallel reading (3-way)
-            - Bookmarks & storage sync
-            - Keyboard shortcuts
-
-            ### Linux AppImage (~10 MB)
-            ```bash
-            chmod +x Holy-Bible-A.S-*.AppImage
-            ./Holy-Bible-A.S-*.AppImage
-            ```
-
-            ### Debian/Ubuntu
-            ```bash
-            sudo dpkg -i holy-bible-a-s_*.deb
-            ```
-
-            ### Fedora/RHEL
-            ```bash
-            sudo rpm -i holy-bible-a-s-*.rpm
-            ```
-          files: |
-            native-linux/appimage/*.AppImage
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/rpm/*.rpm
+          tag_name: ${{ github.ref_name }}
+          name: "Holy Bible A.S ${{ github.ref_name }}"
+          files: native-linux/appimage/*.AppImage
           draft: false
           prerelease: false
-
-  build-windows:
-    runs-on: windows-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Prepare frontend assets
-        shell: bash
-        run: |
-          rm -rf dist
-          mkdir -p dist
-          cp index.html dist/
-          cp -R data audio dist/
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Get version
-        id: version
-        env:
-          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
-        run: |
-          version="${RELEASE_VERSION#v}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
-
-      - name: Build Tauri
-        run: npx tauri build
-
-      - name: Upload Windows installer
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            src-tauri/target/release/bundle/nsis/*.exe
-          draft: false
-
-  build-mac:
-    runs-on: macos-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Prepare frontend assets
-        shell: bash
-        run: |
-          rm -rf dist
-          mkdir -p dist
-          cp index.html dist/
-          cp -R data audio dist/
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Get version
-        id: version
-        env:
-          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
-        run: |
-          version="${RELEASE_VERSION#v}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
-
-      - name: Build Tauri
-        run: npx tauri build
-
-      - name: Upload macOS DMG
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.app
-          draft: false
-
-  build-arch:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    container:
-      image: archlinux:latest
-    steps:
-      - name: Install base tools
-        run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm git nodejs npm base-devel rust webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg patchelf openssl
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Prepare frontend assets
-        shell: bash
-        run: |
-          rm -rf dist
-          mkdir -p dist
-          cp index.html dist/
-          cp -R data audio dist/
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Get version
-        id: version
-        env:
-          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
-        run: |
-          version="${RELEASE_VERSION#v}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
-
-      - name: Build Tauri
-        run: npx tauri build
-
-      - name: Create Arch package
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PKG_NAME="holy-bible-a-s"
-
-          # Find the built binary
-          BINARY=$(find src-tauri/target/release -maxdepth 1 -name "holy-bible-a-s" -type f | head -1)
-          if [ -z "$BINARY" ]; then
-            echo "Binary not found, trying alternative name..."
-            BINARY=$(find src-tauri/target/release -maxdepth 1 -type f -executable | head -1)
-          fi
-
-          if [ -z "$BINARY" ]; then
-            echo "ERROR: No binary found"
-            ls -la src-tauri/target/release/
-            exit 1
-          fi
-
-          echo "Found binary: $BINARY"
-          file "$BINARY"
-
-          PKG_DIR="${PKG_NAME}-${VERSION}"
-          mkdir -p "${PKG_DIR}/opt/${PKG_NAME}"
-          mkdir -p "${PKG_DIR}/usr/bin"
-          mkdir -p "${PKG_DIR}/usr/share/applications"
-          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/512x512/apps"
-
-          cp "$BINARY" "${PKG_DIR}/opt/${PKG_NAME}/"
-
-          cat > "${PKG_DIR}/usr/bin/${PKG_NAME}" << 'EOF'
-          #!/bin/bash
-          exec /opt/holy-bible-a-s/holy-bible-a-s "$@"
-          EOF
-          chmod +x "${PKG_DIR}/usr/bin/${PKG_NAME}"
-
-          cat > "${PKG_DIR}/usr/share/applications/${PKG_NAME}.desktop" << 'EOF'
-          [Desktop Entry]
-          Name=Holy Bible A.S
-          GenericName=Bible Audio Sync
-          Comment=60+ translations, TTS, dictionaries
-          Exec=/opt/holy-bible-a-s/holy-bible-a-s %U
-          Icon=holy-bible-a-s
-          Terminal=false
-          Type=Application
-          Categories=Education;Religion;Audio;
-          EOF
-
-          cat > "${PKG_DIR}/.PKGINFO" << PKGINFO
-          pkgname = ${PKG_NAME}
-          pkgver = ${VERSION}-1
-          pkgdesc = Bible Audio Sync with 60+ translations, TTS, dictionaries
-          url = https://github.com/RufusOliver/Holy-bible-A.S
-          arch = x86_64
-          license = MIT
-          depends = webkit2gtk-4.1 gtk3
-          PKGINFO
-
-          cd "${PKG_DIR}"
-          tar --zstd -cf "../${PKG_NAME}-${VERSION}-x86_64.pkg.tar.zst" .
-          cd ..
-          ls -lh *.pkg.tar.zst
-
-      - name: Upload Arch package
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            *.pkg.tar.zst
-          draft: false
