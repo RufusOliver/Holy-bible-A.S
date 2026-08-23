@@ -13,6 +13,7 @@
   "scripts": {
     "start": "electron .",
     "build:linux": "electron-builder --linux AppImage",
+    "build:linux:dir": "electron-builder --linux dir",
     "build:win": "electron-builder --win nsis",
     "build:mac": "electron-builder --mac dmg"
   },

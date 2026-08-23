@@ -22,14 +22,104 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build AppImage
-        run: npm run build:linux
+      - name: Build Electron for Linux
+        run: npx electron-builder --linux dir
 
       - name: Get version
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "tag=${GITHUB_REF#refs/tags/}" | sed 's/v//' >> $GITHUB_OUTPUT
 
-      - name: Upload to Release
+      - name: Build native AppImage
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          APP_NAME="holy-bible-a-s"
+          DISPLAY_NAME="Holy Bible A.S"
+
+          # Download appimagetool
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+
+          # Create AppDir structure
+          APPDIR="AppDir"
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin"
+          mkdir -p "$APPDIR/usr/share/applications"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/512x512/apps"
+          mkdir -p "$APPDIR/usr/lib/${APP_NAME}"
+          mkdir -p "$APPDIR/opt/${APP_NAME}"
+
+          # Copy electron build
+          cp -r dist/linux-unpacked/* "$APPDIR/opt/${APP_NAME}/"
+
+          # Copy data, audio, index.html into opt
+          cp index.html "$APPDIR/opt/${APP_NAME}/"
+          cp -r data "$APPDIR/opt/${APP_NAME}/"
+          if [ -d audio ]; then
+            cp -r audio "$APPDIR/opt/${APP_NAME}/"
+          fi
+
+          # Create launcher
+          cat > "$APPDIR/usr/bin/${APP_NAME}" << 'EOF'
+          #!/bin/bash
+          DIR="$(cd "$(dirname "$0")" && pwd)"
+          exec "${DIR}/../lib/${APP_NAME}/holy-bible-a-s" "$@"
+          EOF
+          chmod +x "$APPDIR/usr/bin/${APP_NAME}"
+
+          # Symlink for AppImage
+          ln -sf "$APPDIR/usr/bin/${APP_NAME}" "$APPDIR/${APP_NAME}"
+
+          # Desktop file
+          cat > "$APPDIR/usr/share/applications/${APP_NAME}.desktop" << 'EOF'
+          [Desktop Entry]
+          Name=Holy Bible A.S
+          GenericName=Bible Audio Sync
+          Comment=60+ translations, TTS, dictionaries, accessibility
+          Exec=holy-bible-a-s %U
+          Icon=holy-bible-a-s
+          Terminal=false
+          Type=Application
+          Categories=Education;Religion;Audio;
+          Keywords=bible;audio;sync;kjv;niv;esv;tspeech;
+          StartupWMClass=holy-bible-a-s
+          MimeType=application/x-holy-bible;
+          EOF
+
+          # Symlink desktop file
+          ln -sf "$APPDIR/usr/share/applications/${APP_NAME}.desktop" "$APPDIR/${APP_NAME}.desktop"
+
+          # Icon - create from SVG
+          cat > "/tmp/icon.svg" << 'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <rect width="512" height="512" rx="64" fill="#0a1f0a"/>
+            <rect x="224" y="48" width="64" height="416" rx="8" fill="#ffffff"/>
+            <rect x="128" y="160" width="256" height="64" rx="8" fill="#ffffff"/>
+            <text x="256" y="480" text-anchor="middle" fill="#4caf50" font-family="serif" font-size="36" font-weight="bold">HOLY BIBLE</text>
+          </svg>
+          SVG
+
+          # Convert SVG to PNG using ImageMagick if available
+          if command -v convert &> /dev/null; then
+            convert -size 512x512 "/tmp/icon.svg" "$APPDIR/usr/share/icons/hicolor/512x512/apps/${APP_NAME}.png"
+          elif [ -f icon.png ]; then
+            cp icon.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/${APP_NAME}.png"
+          fi
+          ln -sf "$APPDIR/usr/share/icons/hicolor/512x512/apps/${APP_NAME}.png" "$APPDIR/${APP_NAME}.png"
+
+          # Build AppImage
+          ARCH=x86_64 ./appimagetool "$APPDIR" "${DISPLAY_NAME}-${VERSION}-x86_64.AppImage"
+
+          echo "AppImage built:"
+          ls -lh *.AppImage
+
+      - name: Build portable tar.gz
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          tar -czf "Holy-Bible-A.S-${VERSION}-linux-x86_64.tar.gz" -C dist linux-unpacked
+          echo "Portable tar.gz built:"
+          ls -lh *.tar.gz
+
+      - name: Upload AppImage to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -37,18 +127,19 @@ jobs:
           body: |
             ## Holy Bible A.S ${{ steps.version.outputs.tag }}
 
-            ### Download
-            - **Linux AppImage**: `Holy-Bible-A.S-${{ steps.version.outputs.tag }}.AppImage` — works on any Linux distro
-            - **Arch Linux**: `holy-bible-a-s-${{ steps.version.outputs.tag }}-x86_64.pkg.tar.zst` — native Arch package
-            - **Windows installer**: See Windows build below
-            - **macOS DMG**: See Mac build below
+            ### Downloads
+            - **Linux AppImage** (recommended): `Holy-Bible-A.S-*.AppImage` — runs on any Linux, integrates with desktop
+            - **Linux portable**: `Holy-Bible-A.S-*-linux-x86_64.tar.gz` — extract and run
+            - **Arch Linux**: `holy-bible-a-s-*-x86_64.pkg.tar.zst` — native pacman package
+            - **Windows**: `Holy-Bible-A.S Setup.exe`
+            - **macOS**: `Holy-Bible-A.S.dmg`
 
             ### Features
             - 60+ Bible translations
             - TTS audiobook with verse highlighting
-            - Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, Gill's dictionaries
+            - 10 dictionaries: Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, Gill's
             - Interlinear mode with Greek/Hebrew
-            - Dyslexia-friendly mode with OpenDyslexic font
+            - Dyslexia-friendly mode (OpenDyslexic font, reading ruler, backgrounds)
             - Parallel reading (3-way)
             - Bookmarks & storage sync
             - Keyboard shortcuts
@@ -59,17 +150,20 @@ jobs:
             ./Holy-Bible-A.S-*.AppImage
             ```
 
+            ### Linux Portable
+            ```bash
+            tar -xzf Holy-Bible-A.S-*-linux-x86_64.tar.gz
+            cd linux-unpacked
+            ./holy-bible-a-s
+            ```
+
             ### Arch Linux
             ```bash
-            # Install with pacman
             sudo pacman -U holy-bible-a-s-*-x86_64.pkg.tar.zst
-
-            # Or extract and run directly
-            tar -xf holy-bible-a-s-*-x86_64.pkg.tar.zst
-            ./usr/bin/holy-bible-a-s
             ```
           files: |
-            dist/*.AppImage
+            *.AppImage
+            *.tar.gz
           draft: false
           prerelease: false
 
