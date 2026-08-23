@@ -4,14 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-    paths:
-      - 'index.html'
-      - 'data/**'
-      - 'audio/**'
-      - 'native-linux/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
