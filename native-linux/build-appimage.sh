@@ -6,6 +6,9 @@ BUILD_DIR="${RUNNER_TEMP:-/tmp}/holy-bible-a-s-appimage"
 APP_DIR="$BUILD_DIR/AppDir"
 OUTPUT_DIR="$ROOT_DIR/releases"
 LINUXDEPLOY="$BUILD_DIR/linuxdeploy-x86_64.AppImage"
+# Pin linuxdeploy by sha256 (continuous build as of 2026-08-23). Override with
+# LINUXDEPLOY_SHA256=<hash> when intentionally adopting a newer build.
+LINUXDEPLOY_SHA256="${LINUXDEPLOY_SHA256:-421ca71d5c69ea97c6309276232990d43df1dcece0edfaa26bbf926ff96ed12e}"
 ICON="$BUILD_DIR/holy-bible-a-s.svg"
 
 rm -rf "$BUILD_DIR" "$OUTPUT_DIR"
@@ -21,6 +24,7 @@ gcc "$ROOT_DIR/native-linux/main.c" -o "$APP_DIR/usr/bin/holy-bible-a-s" \
 curl --fail --location --silent --show-error \
     https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage \
     --output "$LINUXDEPLOY"
+echo "${LINUXDEPLOY_SHA256}  ${LINUXDEPLOY}" | sha256sum --check --strict -
 chmod +x "$LINUXDEPLOY"
 
 pushd "$BUILD_DIR" >/dev/null
