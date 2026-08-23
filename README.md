@@ -16,11 +16,11 @@ Then visit <http://localhost:8000>.
 
 ## Linux AppImage
 
-A prebuilt 64-bit Linux application is available at [`releases/Holy_Bible_A.S-x86_64.AppImage`](releases/Holy_Bible_A.S-x86_64.AppImage). Make it executable and run it:
+A prebuilt 64-bit Linux application is available at [`build/Holy_Bible_A.S-x86_64.AppImage`](build/Holy_Bible_A.S-x86_64.AppImage). Make it executable and run it:
 
 ```bash
-chmod +x releases/Holy_Bible_A.S-x86_64.AppImage
-./releases/Holy_Bible_A.S-x86_64.AppImage
+chmod +x build/Holy_Bible_A.S-x86_64.AppImage
+./build/Holy_Bible_A.S-x86_64.AppImage
 ```
 
 ## Build the AppImage
@@ -45,7 +45,7 @@ Build from the repository root:
 ./native-linux/build-appimage.sh
 ```
 
-The generated AppImage is written to [`releases/`](releases/). The script downloads the current `linuxdeploy` binary during the build.
+The generated AppImage is written to [`build/`](build/). The script downloads the current `linuxdeploy` binary during the build.
 
 ## Publish an existing artifact
 
@@ -77,7 +77,7 @@ The workflow verifies the artifact contains an AppImage before publishing it to 
 | [`data/`](data/) | Bible translations and reference data |
 | [`audio/`](audio/) | Bundled Bible audio |
 | [`native-linux/`](native-linux/) | GTK/WebKit wrapper and AppImage build script |
-| [`releases/`](releases/) | Built Linux AppImage artifacts |
+| [`build/`](build/) | Built Linux AppImage artifacts |
 
 ## License
 

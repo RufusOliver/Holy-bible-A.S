@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 BUILD_DIR="${RUNNER_TEMP:-/tmp}/holy-bible-a-s-appimage"
 APP_DIR="$BUILD_DIR/AppDir"
-OUTPUT_DIR="$ROOT_DIR/releases"
+OUTPUT_DIR="$ROOT_DIR/build"
 LINUXDEPLOY="$BUILD_DIR/linuxdeploy-x86_64.AppImage"
 # Pin linuxdeploy by sha256 (continuous build as of 2026-08-23). Override with
 # LINUXDEPLOY_SHA256=<hash> when intentionally adopting a newer build.

@@ -11,7 +11,7 @@ Holy Bible A.S is a vanilla HTML, CSS, and JavaScript Bible reader with local Bi
 - `audio/` contains bundled audio organized by translation.
 - `native-linux/` contains the GTK/WebKit wrapper and AppImage build script.
 - `dist/` and `src-tauri/target/` are generated output; do not edit generated files directly.
-- `releases/` contains built AppImage artifacts.
+- `build/` contains built AppImage artifacts.
 
 ## Change Guidelines
 
