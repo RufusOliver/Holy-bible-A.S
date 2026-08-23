@@ -1,6 +1,6 @@
 name: AI Agent
 
-on:
+"on":
   pull_request:
     types: [opened, synchronize, reopened]
   issue_comment:
