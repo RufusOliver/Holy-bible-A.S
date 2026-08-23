@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Holy Bible A.S
+Comment=Bible reading with audio sync, translations, dictionaries, and accessibility
+Exec=holy-bible-a-s
+Icon=holy-bible-a-s
+Terminal=false
+Type=Application
+Categories=Education;Utility;
+StartupWMClass=holy-bible-a-s
