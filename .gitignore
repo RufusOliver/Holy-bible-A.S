@@ -1,6 +1,6 @@
 node_modules/
 dist/
-native-linux/appimage/
+releases/
 native-linux/build/
 src-tauri/gen/
 src-tauri/target/

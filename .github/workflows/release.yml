@@ -43,6 +43,6 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: "Holy Bible A.S ${{ github.ref_name }}"
-          files: native-linux/appimage/*.AppImage
+          files: releases/*.AppImage
           draft: false
           prerelease: false
