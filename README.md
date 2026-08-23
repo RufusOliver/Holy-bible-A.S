@@ -67,6 +67,7 @@ The workflow verifies the artifact contains an AppImage before publishing it to 
 - Save bookmarks and reading position
 - Enable dyslexia-friendly reading controls and reading ruler
 - Support right-to-left Bible text
+- Check GitHub for the latest Linux AppImage and download it on demand
 
 ## Repository layout
 
