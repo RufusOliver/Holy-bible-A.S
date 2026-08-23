@@ -30,7 +30,7 @@ jobs:
         run: bash native-linux/build-appimage.sh
 
       - name: Upload release AppImage
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: "Holy Bible A.S ${{ github.ref_name }}"
