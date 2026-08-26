@@ -394,72 +394,12 @@ function bookNameForVersion(version, book) {
   return book;
 }
 
-const VERSIONS = {
+const ALL_VERSIONS = {
   "SBLGNT": {
     label: "SBLGNT (2010)",
     lang: "grc",
     localVar: "_DATA_nestle1904",
     file: "nestle1904.js"
-  },
-  "Byzantine": {
-    label: "Byzantine Majority Text (2005)",
-    lang: "grc",
-    localVar: "_DATA_byzantine2005",
-    file: "byzantine2005.js"
-  },
-  "Orthodox": {
-    label: "Greek Orthodox Church (1904)",
-    lang: "grc",
-    localVar: "_DATA_greekOrthodox1904",
-    file: "_DATA_greekOrthodox1904.js"
-  },
-  "ScrivenerTR": {
-    label: "Scrivener's Textus Receptus (1894)",
-    lang: "grc",
-    localVar: "_DATA_scrTR1894",
-    file: "_DATA_scrTR1894.js"
-  },
-  "StephanusTR": {
-    label: "Stephanus Textus Receptus (1550)",
-    lang: "grc",
-    localVar: "_DATA_stepTR1550",
-    file: "_DATA_stepTR1550.js"
-  },
-  "Tischendorf": {
-    label: "Tischendorf 8th Edition (1872)",
-    lang: "grc",
-    localVar: "_DATA_tischendorf8",
-    file: "_DATA_tischendorf8.js"
-  },
-  "WH": {
-    label: "Westcott & Hort (1881)",
-    lang: "grc",
-    localVar: "_DATA_wh1881",
-    file: "_DATA_wh1881.js"
-  },
-  "LXX": {
-    label: "Septuagint Swete (1887)",
-    lang: "grc",
-    localVar: "_DATA_septuagint",
-    file: "_DATA_septuagint.js"
-  },
-  "Arabic": {
-    label: "Smith & Van Dyke Arabic (1865)",
-    lang: "ar",
-    localVar: "_DATA_arabic_svd",
-    file: "_DATA_arabic_svd.js"
-  },
-  "NHEB": {
-    label: "New Heart English Bible (2010)",
-    lang: "en",
-    localVar: "_DATA_nheb",
-    file: "nheb.js"
-  },
-  "Apocrypha": {
-    label: "Apocrypha Deuterocanonical",
-    lang: "en",
-    localVar: "_DATA_apocrypha",
-    file: "apocrypha.js"
   },
   "YLT": {
     label: "Young's Literal Translation (1862)",
@@ -768,6 +708,14 @@ const VERSIONS = {
     file: "mlv.js"
   }
 };
+
+const BROKEN_DATA_VERSIONS = new Set([
+  'Byzantine', 'Orthodox', 'ScrivenerTR', 'StephanusTR', 'Tischendorf', 'WH', 'LXX',
+  'Arabic', 'NHEB', 'Apocrypha'
+]);
+const VERSIONS = Object.fromEntries(
+  Object.entries(ALL_VERSIONS).filter(([key]) => !BROKEN_DATA_VERSIONS.has(key))
+);
 
 const bookCache = {};
 
