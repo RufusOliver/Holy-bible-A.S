@@ -1,0 +1,54 @@
+name: Checkmarx DAST
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Public URL to scan'
+        required: true
+        type: string
+        default: 'https://rufusoliver.github.io/Holy-bible-A.S/'
+      scan_type:
+        description: 'Scan type'
+        required: true
+        type: choice
+        default: web
+        options:
+          - web
+          - api
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/checkmarx-dast.yml'
+      - 'index.html'
+      - 'data/**'
+      - 'README.md'
+
+permissions:
+  contents: read
+
+jobs:
+  dast:
+    if: ${{ vars.CHECKMARX_ENVIRONMENT_ID != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Validate target URL
+        env:
+          TARGET_URL: ${{ inputs.target_url || 'https://rufusoliver.github.io/Holy-bible-A.S/' }}
+        run: |
+          echo "Scanning ${TARGET_URL}"
+          curl -fsSL "${TARGET_URL}" -o /tmp/bible-home.html
+          grep -qi "Holy Bible A.S" /tmp/bible-home.html
+
+      - name: Run Checkmarx DAST
+        uses: Checkmarx/dast-github-action@v2.3.0
+        with:
+          command: ${{ inputs.scan_type || 'web' }}
+          base_url: ${{ inputs.target_url || 'https://rufusoliver.github.io/Holy-bible-A.S/' }}
+          environment_id: ${{ vars.CHECKMARX_ENVIRONMENT_ID }}
+          output: checkmarx-dast-report
+          fail_on: medium
