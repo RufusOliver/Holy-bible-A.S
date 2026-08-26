@@ -1124,7 +1124,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('pagehide', () => {
-  if (storageDirty && folderStorageActive()) folderFlush();
+  if (storageDirty && folderStorageActive()) {
+    try {
+      const fh = storageFolder.getFileHandle(STORAGE_FILE, { create: true });
+      fh.then(h => h.createWritable()).then(w => {
+        w.write(JSON.stringify(storageCache));
+        w.close();
+      }).catch(() => {});
+    } catch (e) {}
+  }
 });
 
 function saveLastState() {
@@ -1266,6 +1274,7 @@ $('inspireBtn').onclick = async () => {
   const rv = allVersions[Math.floor(Math.random() * allVersions.length)];
   await ensureVersionData(rv);
   const data = loadVersionDataFromVar(VERSIONS[rv].localVar);
+  if (!data) { statusEl.textContent = 'Data not loaded for ' + VERSIONS[rv].label + '.'; return; }
   const books = Object.keys(data);
   const randBook = books[Math.floor(Math.random() * books.length)];
   const chapters = Object.keys(data[randBook]);
@@ -1364,7 +1373,7 @@ versionSelect.onchange = () => {
   }
   populateChapters();
   loadVoices();
-  loadChapter();
+  loadChapter().catch(err => { statusEl.textContent = 'Error: ' + err.message; });
   autoLoadAudio();
 };
 
@@ -1385,7 +1394,10 @@ chapterSelect.onchange = () => { currentChapter = Number(chapterSelect.value); }
 $('loadBtn').onclick = loadChapter;
 $('resetTimestampsBtn').onclick = resetTimestamps;
 
+let _loadChapterGeneration = 0;
+
 async function loadChapter() {
+  const gen = ++_loadChapterGeneration;
   currentBook = bookSelect.value;
   currentChapter = Number(chapterSelect.value);
   let data;
@@ -1396,6 +1408,7 @@ async function loadChapter() {
     statusEl.textContent = `Error: ${err.message}`;
     return;
   }
+  if (gen !== _loadChapterGeneration) return;
   if (!data || data.length === 0) {
     versesContainer.innerHTML = '<div class="hint">Chapter loaded but no verses for this chapter in the source data.</div>';
     statusEl.textContent = `0 verses for ${currentBook} ${currentChapter} in ${VERSIONS[versionSelect.value].label}.`;
@@ -1410,6 +1423,7 @@ async function loadChapter() {
   } else {
     parallelData = null;
   }
+  if (gen !== _loadChapterGeneration) return;
   const savedTs = loadChapterTimestamps();
   timestamps = savedTs || new Array(verses.length).fill(null);
   currentVerseIndex = -1;
@@ -1585,10 +1599,11 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+let _scrollThrottle = null;
 window.addEventListener('scroll', () => {
+  if (_scrollThrottle) return;
+  _scrollThrottle = setTimeout(() => { _scrollThrottle = null; }, 100);
   if (programmaticScroll) {
-    // Still mid-animation (or a trailing event from it) - push the
-    // end-of-scroll timer back out instead of letting it expire early.
     scheduleProgrammaticScrollEnd();
     return;
   }
@@ -1627,6 +1642,7 @@ function resetTimestamps() {
 audioFileInput.onchange = (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  if (audio.src && audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
   const url = URL.createObjectURL(file);
   audio.src = url;
   audio.load();
@@ -1922,7 +1938,10 @@ async function autoLoadAudio() {
           statusEl.textContent = `Audio: ${book} ${chapter}`;
           return;
         }
-      } catch (e) {}
+  } catch (e) {
+    console.warn('Failed to save storage:', e);
+    statusEl.textContent = 'Warning: could not save data to folder.';
+  }
     }
   } catch (e) {}
 
@@ -1986,7 +2005,6 @@ function setVolume(v) {
 setVolume(volumeSlider.value);
 
 volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
-volumeSlider.addEventListener('change', () => setVolume(volumeSlider.value));
 
 function updateSync() {
   if (timestamps.every(t => t == null)) return;
@@ -2060,6 +2078,9 @@ function escHtml(s) {
 const DICT_SOURCES = {
   bdb: { file: 'data/bdb.js', var: '_DATA_bdb', name: "Brown-Driver-Briggs Hebrew Lexicon", placeholder: "Search G1 / H1 / word..." },
   vines: { file: 'data/vines.js', var: '_DATA_vines', name: "Vine's Expository Dictionary", placeholder: "Search word..." },
+  eastons: { file: 'data/eastons.js', var: '_DATA_eastons', name: "Easton's Bible Dictionary", placeholder: "Search word..." },
+  smiths: { file: 'data/smiths.js', var: '_DATA_smiths', name: "Smith's Bible Dictionary", placeholder: "Search word..." },
+  hitchcocks: { file: 'data/hitchcocks.js', var: '_DATA_hitchcocks', name: "Hitchcock's Bible Names", placeholder: "Search name..." },
   faussets: { file: 'data/faussets.js', var: '_DATA_faussets', name: "Fausset's Bible Dictionary", placeholder: "Search word..." },
   jfb: { file: 'data/jfb.js', var: '_DATA_jfb', name: "JFB Commentary", placeholder: "Search book or reference..." },
   gills: { file: 'data/gills.js', var: '_DATA_gills', name: "Gill's Exposition", placeholder: "Search book or reference..." }
@@ -2354,9 +2375,9 @@ async function dictSearch() {
       'hag': 'Haggai', 'zac': 'Zechariah', 'mal': 'Malachi',
       'mat': 'Matthew', 'mar': 'Mark', 'luk': 'Luke', 'joh': 'John', 'act': 'Acts',
       'rom': 'Romans', 'co1': '1 Corinthians', 'co2': '2 Corinthians', 'gal': 'Galatians',
-      'eph': 'Ephesians', 'phi': 'Philippians', 'col': 'Colossians',
+      'eph': 'Ephesians', 'php': 'Philippians', 'col': 'Colossians',
       'th1': '1 Thessalonians', 'th2': '2 Thessalonians', 'ti1': '1 Timothy', 'ti2': '2 Timothy',
-      'tit': 'Titus', 'phi': 'Philemon', 'heb': 'Hebrews', 'jam': 'James',
+      'tit': 'Titus', 'phm': 'Philemon', 'heb': 'Hebrews', 'jam': 'James',
       'pe1': '1 Peter', 'pe2': '2 Peter', 'jn1': '1 John', 'jn2': '2 John', 'jn3': '3 John',
       'jud': 'Jude', 'rev': 'Revelation'
     };
@@ -2388,7 +2409,7 @@ async function dictSearch() {
           entries = Object.entries(chData).map(([v, h]) => [`${ref.book} ${ref.chapter}:${v}`, h]).slice(0, 20);
         }
         body.innerHTML = entries.map(([label, html]) => {
-          return `<div class="dict-entry"><div class="dict-lemma">${escHtml(label)}</div><p class="dict-topical">${html}</p></div>`;
+          return `<div class="dict-entry"><div class="dict-lemma">${escHtml(label)}</div><p class="dict-topical">${escHtml(html)}</p></div>`;
         }).join('');
       } else {
         body.innerHTML = `<div class="dict-entry"><p class="dict-none">Chapter ${ref.chapter} not found in ${ref.book}.</p></div>`;
@@ -2704,7 +2725,7 @@ function ttsSpeak() {
 }
 
 // Keyboard shortcut for TTS
-document.onkeydown = (e) => {
+document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
     if (dictOverlay.classList.contains('open')) { e.preventDefault(); dictClose(); return; }
     if (helpOverlay.classList.contains('open')) { e.preventDefault(); helpOverlay.classList.remove('open'); return; }
@@ -2725,13 +2746,18 @@ function formatTime(t) {
 
 // Load default (or resume last saved position)
 (async function initApp() {
-  await tryAutoReconnect();
-  applyResumedState();
-  await loadChapter();
-  if (resumeVerseIndex >= 0 && resumeVerseIndex < verses.length) {
-    currentVerseIndex = resumeVerseIndex;
-    highlightVerse(currentVerseIndex);
-    statusEl.textContent = `Resumed at verse ${resumeVerseIndex + 1}. Load an audio file to sync playback.`;
+  try {
+    await tryAutoReconnect();
+    applyResumedState();
+    await loadChapter();
+    if (resumeVerseIndex >= 0 && resumeVerseIndex < verses.length) {
+      currentVerseIndex = resumeVerseIndex;
+      highlightVerse(currentVerseIndex);
+      statusEl.textContent = `Resumed at verse ${resumeVerseIndex + 1}. Load an audio file to sync playback.`;
+    }
+  } catch (err) {
+    console.error('App initialization failed:', err);
+    statusEl.textContent = 'Failed to initialize: ' + (err.message || err);
   }
 })();
 </script>

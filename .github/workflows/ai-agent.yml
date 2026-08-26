@@ -43,6 +43,8 @@ jobs:
         env:
           HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           node -e "
             const https = require('https');
@@ -50,8 +52,8 @@ jobs:
 
             const diff = process.env.CODE_DIFF || 'No code changes';
             const stats = process.env.DIFF || 'No stats';
-            const prTitle = '${{ github.event.pull_request.title }}';
-            const prBody = '${{ github.event.pull_request.body || '' }}';
+            const prTitle = process.env.PR_TITLE || '';
+            const prBody = process.env.PR_BODY || '';
 
             const prompt = \`You are a senior code reviewer for a Bible audio sync web app (Holy Bible A.S).
             Review this pull request and provide constructive feedback.
