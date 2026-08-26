@@ -42,6 +42,7 @@ jobs:
             librsvg2-dev \
             gcc \
             pkg-config \
+            python3 \
             file
 
       - name: Build native AppImage

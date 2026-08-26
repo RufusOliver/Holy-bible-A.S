@@ -18,9 +18,15 @@ concurrency:
 
 jobs:
   enable-auto-merge:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
+      - name: Wait for approval
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-regexp: '^(CI|CodeQL|Build|Auto Label)'
+
       - name: Enable squash auto-merge
         env:
           GH_TOKEN: ${{ github.token }}
