@@ -89,4 +89,4 @@ The generated AppImage is written to [`build/`](build/).
 
 ## License
 
-This project is licensed under the Unlicense. See [`LICENSE`](LICENSE).
+This project is licensed under the Reciprocal Public Domain Dedication. See [`LICENSE`](LICENSE).

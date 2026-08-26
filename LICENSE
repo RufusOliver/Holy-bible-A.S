@@ -1,3 +1,9 @@
+RECIPROCAL PUBLIC DOMAIN DEDICATION
+
+Version 1, 26 August 2026
+
+Copyright (C) 2026 Holy Bible A.S Contributors
+
 This is free and unencumbered software released into the public domain.
 
 Anyone is free to copy, modify, publish, use, compile, sell, or
@@ -12,6 +18,32 @@ of the public at large and to the detriment of our heirs and
 successors. We intend this dedication to be an overt act of
 relinquishment in perpetuity of all present and future rights to this
 software under copyright law.
+
+RECIPROCAL PUBLIC DOMAIN CLAUSE
+
+If any person or entity uses this software, in whole or in part,
+directly or indirectly, as part of, integrated into, linked with,
+compiled with, or distributed alongside any other software, product,
+library, framework, service, or application ("downstream work"), then
+the downstream work must also be released into the public domain under
+this same license, with no exceptions.
+
+This obligation applies to:
+  (a) derivative works that incorporate or modify this software;
+  (b) software that statically or dynamically links to this software;
+  (c) software that bundles, redistributes, or packages this software;
+  (d) software that imports, requires, or depends on this software at
+      any level of the dependency chain.
+
+No downstream work may be placed under any restrictive, proprietary,
+closed-source, copyleft, or non-public-domain license if it uses this
+software in any form. The only permitted license for any downstream
+work is this Reciprocal Public Domain Dedication or an equivalent
+public domain dedication.
+
+If the downstream work is distributed in binary form, the complete
+source code sufficient to rebuild it must also be made freely available
+in the public domain.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
