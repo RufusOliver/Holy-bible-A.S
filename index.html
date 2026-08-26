@@ -2672,7 +2672,7 @@ function ttsSpeak() {
   speechSynthesis.speak(utter);
 }
 
-// Keyboard shortcut for TTS
+// Keyboard shortcuts for TTS and accessibility
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
     if (dictOverlay.classList.contains('open')) { e.preventDefault(); dictClose(); return; }
@@ -2681,6 +2681,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.code === 'Space') { e.preventDefault(); if (ttsRunning) ttsPause(); else togglePlayPause(); }
   if (e.code === 'KeyT') { e.preventDefault(); if (!ttsRunning) ttsPlayBtn.click(); else ttsStop(); }
+  if (e.code === 'KeyD' && e.altKey) { e.preventDefault(); toggleDyslexia(); }
   if (e.code === 'ArrowLeft') { seekBar.value = Math.max(0, (audio.currentTime - 3) / (audio.duration || 1)); seekBar.oninput(); }
   if (e.code === 'ArrowRight') { seekBar.value = Math.min(1, (audio.currentTime + 3) / (audio.duration || 1)); seekBar.oninput(); }
 });
