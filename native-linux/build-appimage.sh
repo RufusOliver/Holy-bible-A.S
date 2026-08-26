@@ -21,8 +21,22 @@ ICON="$BUILD_DIR/holy-bible-a-s.svg"
 # chdir'ing into $APPDIR/usr before any WebKit call. The replacement is shorter than
 # both original strings, so it is written over the old bytes and NUL-padded;
 # the ELF layout is untouched.
-HELPER_PATH_OLD="/usr/lib/webkit2gtk-4.1"
 HELPER_PATH_NEW="././lib/webkit2gtk-4.1"
+
+# Detect the actual compile-time helper directory from the system library
+HELPER_PATH_OLD=""
+for candidate in \
+    "$(pkg-config --variable=libdir webkit2gtk-4.1)/webkit2gtk-4.1" \
+    "/usr/lib/webkit2gtk-4.1" \
+    "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1"; do
+    if [[ -d "$candidate" ]]; then
+        HELPER_PATH_OLD="$candidate"
+        break
+    fi
+done
+if [[ -z "$HELPER_PATH_OLD" ]]; then
+    HELPER_PATH_OLD="/usr/lib/webkit2gtk-4.1"
+fi
 
 rm -rf "$BUILD_DIR" "$OUTPUT_DIR"
 mkdir -p "$APP_DIR/usr/bin" "$APP_DIR/usr/share/holy-bible-a-s" "$OUTPUT_DIR"
