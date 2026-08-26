@@ -2735,7 +2735,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyT') { e.preventDefault(); if (!ttsRunning) ttsPlayBtn.click(); else ttsStop(); }
   if (e.code === 'ArrowLeft') { seekBar.value = Math.max(0, (audio.currentTime - 3) / (audio.duration || 1)); seekBar.oninput(); }
   if (e.code === 'ArrowRight') { seekBar.value = Math.min(1, (audio.currentTime + 3) / (audio.duration || 1)); seekBar.oninput(); }
-};
+});
 
 function formatTime(t) {
   if (t == null || isNaN(t)) return '0:00';

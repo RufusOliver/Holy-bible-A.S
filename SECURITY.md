@@ -2,20 +2,26 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 1.0.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability in Holy Bible A.S, please report it by opening an issue or contacting the maintainer directly.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Please include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+
+We will respond within 7 days and work to fix confirmed issues promptly.
+
+## Scope
+
+This is a static web application with no server-side code. Security concerns are limited to:
+- Client-side code execution (XSS)
+- Data storage (localStorage, File System Access API)
+- External resource loading (Archive.org streaming, CDN fonts)
+
+The application does not collect, transmit, or store user data on any server.
