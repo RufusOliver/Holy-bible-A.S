@@ -1,0 +1,73 @@
+name: Publish AppImage to Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.19). Creates a new release if it doesn't exist."
+        required: true
+      run_id:
+        description: "Build run ID (leave empty to auto-detect latest successful build)"
+        required: false
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve run ID
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ inputs.run_id }}" ]; then
+            RUN_ID="${{ inputs.run_id }}"
+          else
+            RUN_ID=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow build.yml \
+              --branch main \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId')
+            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+              echo "::error::No successful AppImage build run found"
+              exit 1
+            fi
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Using run ID: $RUN_ID"
+
+      - name: Download artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ steps.resolve.outputs.run_id }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name Holy-Bible-A.S-Linux-x86_64 \
+            --dir release-assets
+
+      - name: Verify AppImage
+        run: |
+          APPIMAGE=$(find release-assets -maxdepth 1 -type f -name '*.AppImage' | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "::error::No AppImage found in artifact"
+            find release-assets -type f
+            exit 1
+          fi
+          echo "Found: $APPIMAGE ($(du -h "$APPIMAGE" | cut -f1))"
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: "Holy Bible A.S ${{ inputs.tag }}"
+          files: release-assets/*.AppImage
+          draft: false
+          prerelease: false
+          generate_release_notes: true
