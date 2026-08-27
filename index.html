@@ -707,12 +707,24 @@ const ALL_VERSIONS = {
     lang: "en",
     localVar: "_DATA_MLV",
     file: "mlv.js"
+  },
+  "Arabic": {
+    label: "Smith & Van Dyke Arabic (1865)",
+    lang: "ar",
+    localVar: "_DATA_arabic_svd",
+    file: "_DATA_arabic_svd.js"
+  },
+  "NHEB": {
+    label: "New Heart English Bible (2010)",
+    lang: "en",
+    localVar: "_DATA_nheb",
+    file: "nheb.js"
   }
 };
 
 const BROKEN_DATA_VERSIONS = new Set([
   'Byzantine', 'Orthodox', 'ScrivenerTR', 'StephanusTR', 'Tischendorf', 'WH', 'LXX',
-  'Arabic', 'NHEB', 'Apocrypha'
+  'Apocrypha'
 ]);
 const VERSIONS = Object.fromEntries(
   Object.entries(ALL_VERSIONS).filter(([key]) => !BROKEN_DATA_VERSIONS.has(key))
