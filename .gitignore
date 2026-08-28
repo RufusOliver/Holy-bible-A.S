@@ -2,3 +2,4 @@ node_modules/
 dist/
 native-linux/build/
 build/
+bible-audio-sync-data.json
