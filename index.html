@@ -265,6 +265,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 <script src="data/strongs.js"></script>
 <script src="data/lexicon.js"></script>
 <script src="data/interlinear.js"></script>
+<script src="data/flite/flite.js"></script>
 <script>
 const NT_BOOKS = {
   "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21,
@@ -2026,7 +2027,10 @@ function setVolume(v) {
 }
 setVolume(volumeSlider.value);
 
-volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+volumeSlider.addEventListener('input', () => {
+  setVolume(volumeSlider.value);
+  fliteSetVolume(volumeSlider.value);
+});
 
 function updateSync() {
   if (timestamps.every(t => t == null)) return;
@@ -2565,6 +2569,7 @@ versesContainer.addEventListener('click', (e) => {
   if (isNaN(idx)) return;
   if (verses.length === 0) return;
   speechSynthesis.cancel();
+  fliteStopPlayback();
   ttsRunning = true;
   ttsIdx = idx;
   ttsPlayBtn.style.display = 'none';
@@ -2605,8 +2610,19 @@ function getFilteredVoices() {
 }
 
 function loadVoices() {
-  if (!('speechSynthesis' in window)) return;
+  const langFilter = VERSIONS[versionSelect.value].lang;
+  const saved = safeGet(LS_SAVED_VOICE);
+  if (!('speechSynthesis' in window)) {
+    ttsVoiceSelect.innerHTML = '';
+    if (langFilter === 'en') ttsVoiceSelect.add(new Option('Flite (offline, no AI)', 'flite'));
+    ttsStatusEl.textContent = langFilter === 'en'
+      ? 'No system voices; select Flite for offline reading.'
+      : 'No text-to-speech voices available on this device.';
+    return;
+  }
   const voices = speechSynthesis.getVoices();
+  ttsVoiceSelect.innerHTML = '';
+  if (langFilter === 'en') ttsVoiceSelect.add(new Option('Flite (offline, no AI)', 'flite'));
   if (!voices.length) {
     clearTimeout(voiceRetryTimer);
     voiceRetryTimer = setTimeout(loadVoices, 300);
@@ -2614,15 +2630,14 @@ function loadVoices() {
   }
   const pool = offlineVoicePool(voices);
   const filtered = getFilteredVoices();
-  const langFilter = VERSIONS[versionSelect.value].lang;
-  ttsVoiceSelect.innerHTML = '';
-  const saved = safeGet(LS_SAVED_VOICE);
   filtered.forEach((v, i) => {
     const opt = new Option(`${v.name} (${v.lang})`, i);
     if (v.lang.startsWith(langFilter)) opt.selected = true;
     ttsVoiceSelect.appendChild(opt);
   });
-  if (filtered.length) {
+  if (saved === 'flite') {
+    ttsVoiceSelect.value = 'flite';
+  } else if (filtered.length) {
     if (saved !== null && filtered[saved]) {
       ttsVoiceSelect.value = saved;
     } else {
@@ -2641,8 +2656,115 @@ if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined
 loadVoices();
 ttsVoiceSelect.onchange = () => {
   const v = Number(ttsVoiceSelect.value);
-  if (Number.isInteger(v) && v >= 0) safeSet(LS_SAVED_VOICE, String(v));
+  if (ttsVoiceSelect.value === 'flite') safeSet(LS_SAVED_VOICE, 'flite');
+  else if (Number.isInteger(v) && v >= 0) safeSet(LS_SAVED_VOICE, String(v));
 };
+
+function fliteSelected() {
+  return ttsVoiceSelect.value === 'flite';
+}
+
+// Flite (festvox/flite) offline WASM synthesis via Web Audio.
+let fliteMod = null;
+let fliteProm = null;
+let fliteCtx = null;
+let fliteGain = null;
+let fliteNode = null;
+
+function fliteAudioCtx() {
+  if (!fliteCtx) {
+    fliteCtx = new (window.AudioContext || window.webkitAudioContext)();
+    fliteGain = fliteCtx.createGain();
+    fliteGain.connect(fliteCtx.destination);
+  }
+  if (fliteCtx.state === 'suspended') fliteCtx.resume();
+  return fliteCtx;
+}
+
+function fliteModuleLoad() {
+  if (fliteMod) return Promise.resolve(fliteMod);
+  if (!fliteProm) {
+    if (!window.FliteModule) return Promise.reject(new Error('Flite audio engine not available.'));
+    fliteProm = FliteModule({ locateFile: (p) => 'data/flite/' + p })
+      .then((m) => {
+        if (m && m._flite_wasm_init()) { fliteMod = m; return m; }
+        throw new Error('Flite init failed');
+      })
+      .catch((e) => {
+        fliteProm = null;
+        throw new Error('Flite audio engine failed to load. Serve this page over HTTP to use offline TTS.');
+      });
+  }
+  return fliteProm;
+}
+
+function fliteSynthVerse(text, voice, cb) {
+  fliteModuleLoad().then((m) => {
+    let lenP, rateP, txtP;
+    let data = null;
+    try {
+      lenP = m._malloc(4); rateP = m._malloc(4);
+      const bytes = m.lengthBytesUTF8(text) + 2;
+      txtP = m._malloc(bytes);
+      m.stringToUTF8(text, txtP, bytes);
+      const sampP = m._flite_wasm_synth(txtP, voice, lenP, rateP);
+      const len = m.HEAP32[lenP >> 2];
+      const rate = m.HEAP32[rateP >> 2];
+      m._free(txtP); m._free(lenP); m._free(rateP);
+      if (!sampP || len <= 0 || rate <= 0) {
+        if (sampP) m._free(sampP);
+        throw new Error('Flite produced no audio');
+      }
+      data = { samples: m.HEAP16.subarray(sampP >> 1, (sampP >> 1) + len).slice(), rate };
+      m._free(sampP);
+    } catch (e) {
+      if (txtP) m._free(txtP);
+      if (lenP) m._free(lenP);
+      if (rateP) m._free(rateP);
+      cb(e);
+      return;
+    }
+    cb(null, data);
+  }).catch((e) => cb(e));
+}
+
+function fliteSpeakVerse() {
+  if (!ttsRunning) return;
+  const text = verses[ttsIdx] || '';
+  if (!text) { ttsIdx++; ttsSpeak(); return; }
+  fliteSynthVerse(text, 1, (err, res) => {
+    if (!ttsRunning) return;
+    if (err) {
+      ttsStatusEl.textContent = 'Flite error: ' + err.message;
+      ttsStop();
+      return;
+    }
+    let ctx;
+    try { ctx = fliteAudioCtx(); } catch (e) { ttsStop(); return; }
+    clearWordHighlights();
+    const n = res.samples.length;
+    const f32 = new Float32Array(n);
+    for (let i = 0; i < n; i++) f32[i] = res.samples[i] / 32768;
+    const buf = ctx.createBuffer(1, n, res.rate);
+    buf.copyToChannel(f32, 0);
+    fliteNode = ctx.createBufferSource();
+    fliteNode.buffer = buf;
+    fliteGain.gain.value = parseFloat(volumeSlider.value) || 1;
+    fliteNode.connect(fliteGain);
+    highlightVerse(ttsIdx);
+    ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (Flite)...`;
+    fliteNode.onended = () => { if (ttsRunning) { ttsIdx++; ttsSpeak(); } };
+    fliteNode.start();
+  });
+}
+
+function fliteStopPlayback() {
+  if (fliteNode) { try { fliteNode.stop(); } catch (e) {} fliteNode = null; }
+}
+
+function fliteSetVolume(v) {
+  if (fliteGain && fliteCtx) fliteGain.gain.value = parseFloat(v) || 1;
+}
 
 ttsSpeed.oninput = () => { ttsSpeedVal.textContent = ttsSpeed.value + 'x'; };
 
@@ -2650,6 +2772,7 @@ ttsPlayBtn.onclick = () => {
   if (verses.length === 0) { ttsStatusEl.textContent = 'Load a chapter first.'; return; }
   if (ttsRunning) { ttsPause(); return; }
   speechSynthesis.cancel();
+  fliteStopPlayback();
   ttsRunning = true;
   ttsIdx = currentVerseIndex >= 0 ? currentVerseIndex : 0;
   ttsPlayBtn.style.display = 'none';
@@ -2660,6 +2783,16 @@ ttsPlayBtn.onclick = () => {
 ttsStopBtn.onclick = () => { ttsStop(); };
 
 function ttsPause() {
+  if (fliteSelected() && fliteCtx) {
+    if (fliteCtx.state === 'suspended') {
+      fliteCtx.resume();
+      ttsStatusEl.textContent = `Verse ${ttsIdx + 1}...`;
+    } else if (fliteCtx.state === 'running') {
+      fliteCtx.suspend();
+      ttsStatusEl.textContent = 'Paused.';
+    }
+    return;
+  }
   if (speechSynthesis.paused) {
     speechSynthesis.resume();
     ttsStatusEl.textContent = `Verse ${ttsIdx + 1}...`;
@@ -2671,6 +2804,7 @@ function ttsPause() {
 
 function ttsStop() {
   speechSynthesis.cancel();
+  fliteStopPlayback();
   ttsRunning = false;
   clearWordHighlights();
   ttsPlayBtn.style.display = '';
@@ -2766,6 +2900,7 @@ function ttsSpeak() {
     autoAdvanceChapter();
     return;
   }
+  if (fliteSelected()) { fliteSpeakVerse(); return; }
   clearWordHighlights();
   const verseText = verses[ttsIdx];
   const tokens = verseText.split(/(\s+)/);
