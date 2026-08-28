@@ -67,6 +67,10 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .dict-tab { padding: 8px 10px; font-size: 0.75rem; color: #6a8a6a; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; white-space: nowrap; }
 .dict-tab:hover { color: #8fbc8f; }
 .dict-tab.active { color: #4caf50; border-bottom-color: #4caf50; font-weight: 600; }
+.dict-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 2px; }
+.dict-chip { font-size: 0.7rem; padding: 3px 9px; border-radius: 11px; border: 1px solid #1a5c2a; background: #0a1f0a; color: #8fbc8f; cursor: pointer; font-family: inherit; }
+.dict-chip:hover { background: #123a12; }
+.dict-chip.active { background: #1a5c2a; color: #4caf50; font-weight: 600; border-color: #4caf50; }
 .dict-section-label { color: #4caf50; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
 .dict-section-label:first-child { margin-top: 0; }
 .dict-topical { margin-top: 6px; color: #c8e6c9; line-height: 1.55; font-size: 0.92rem; white-space: pre-wrap; }
@@ -1507,10 +1511,10 @@ function interlinearEntry(word, verseNum, wordIdx, version) {
     if (entry) return entry;
     return null;
   }
-  const sn = lookupStrongs(word);
   const key = stripDiacritics(word.replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
   const gloss = data.glosses[key];
-  return gloss ? [sn, gloss] : null;
+  if (!gloss) return null;
+  return Array.isArray(gloss) ? [gloss[0], gloss[1]] : [lookupStrongs(word), gloss];
 }
 
 function verseMarkup(v, i, primary, version) {
@@ -1519,15 +1523,18 @@ function verseMarkup(v, i, primary, version) {
   const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
     const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
     wordIdx++;
-    const sn = (il && il[0]) ? il[0] : lookupStrongs(tok);
-    const snAttr = sn ? ` data-sn="${escHtml(sn)}"` : '';
+    const fullSn = il ? lookupStrongs(tok) : null;
+    const sn = (il && il[0]) ? il[0] : fullSn;
+    const wordAttr = ` data-word="${escHtml(tok)}"`;
+    const gAttr = (il && il[0]) ? ` data-g="${escHtml(il[0])}"` : '';
+    const snAttr = sn ? ` data-sn="${escHtml(fullSn || sn)}"` : '';
     let inner = escHtml(tok);
     if (il && (il[0] || il[1])) {
       inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(tok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
     } else if (showSn && sn) {
       inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(tok)}`;
     }
-    return `<span class="w" data-i="${ti}"${snAttr}>${inner}</span>`;
+    return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}${gAttr}>${inner}</span>`;
   })()).join('');
   return `<div class="verse"${primary ? ` data-index="${i}"` : ''}>
     <span class="num">${i+1}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
@@ -2232,47 +2239,117 @@ if (rulerOn) {
   document.getElementById('dysRulerBtn').classList.add('active');
 }
 
-function openWordDict(snString) {
+function scoreDictTokens(text, wl) {
+  if (!wl) return -1;
+  let best = -1;
+  const tokens = String(text).replace(/<[^>]+>/g, ' ').replace(/\(.*?\)/g, ' ')
+    .split(/[,\s]+/).map(t => t.replace(/^[^a-z]+|[^a-z]+$/gi, '').toLowerCase())
+    .filter(t => t.length >= 2);
+  for (const tl of tokens) {
+    let s = -1;
+    if (tl === wl) s = 100;
+    else if (tl.length >= 3 && tl.startsWith(wl) && tl.length <= wl.length + 3) s = 6 + tl.length;
+    else if (wl.length >= 4 && wl.startsWith(tl) && tl.length >= 3) s = 3;
+    if (s > best) best = s;
+  }
+  return best;
+}
+
+function renderDictEntry(num, e) {
+  if (num.startsWith('H') && window._DATA_bdb && window._DATA_bdb[num]) {
+    return `<div class="dict-entry"><div class="dict-num">${escHtml(num)}</div><p class="dict-def">${window._DATA_bdb[num]}</p></div>`;
+  }
+  if (!e) return `<div class="dict-entry"><p class="dict-none">No entry for ${escHtml(num)}.</p></div>`;
+  let html = `<div class="dict-entry">`;
+  html += `<div class="dict-num">${escHtml(num)}</div>`;
+  html += `<div class="dict-lemma">${e.l ? escHtml(e.l) : escHtml(num)}${e.t ? ` <span class="dict-translit">(${escHtml(e.t)})</span>` : ''}</div>`;
+  if (e.d) html += `<p class="dict-def">${escHtml(e.d)}</p>`;
+  if (e.r) html += `<p class="dict-deriv">${escHtml(e.r)}</p>`;
+  if (e.k) html += `<p class="dict-kjv"><span class="dict-kjv-label">KJV:</span> ${escHtml(e.k)}</p>`;
+  if (e.th) {
+    html += `<div class="dict-section-label">Thayer's Lexicon</div>`;
+    html += `<p class="dict-def">${escHtml(e.th)}</p>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+async function openWordDict(snString, wordText, preferred) {
   activeDict = 'strongs';
   dictOverlay.querySelectorAll('.dict-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.dict === 'strongs');
   });
   const nums = String(snString).split('/');
   const found = nums
-    .map(g => ({ g: g, e: window._DATA_lexicon && window._DATA_lexicon[g] }))
-    .filter(x => x.e);
+    .map(g => ({ g: g, e: (window._DATA_lexicon && window._DATA_lexicon[g]) || null }))
+    .filter(x => x.g.startsWith('H') ? window._DATA_bdb || true : x.e);
   const titleEl = dictOverlay.querySelector('.dict-title');
-  if (found.length === 1) {
-    const isHeb = found[0].g.startsWith('H');
-    titleEl.textContent = isHeb ? "Strong's Hebrew Dictionary" : "Strong's Greek Dictionary";
-  } else {
-    titleEl.textContent = "Dictionary";
-  }
   const body = dictOverlay.querySelector('.dict-body');
+
   if (!found.length) {
+    titleEl.textContent = "Strong's Dictionary";
     body.innerHTML = `<div class="dict-entry"><p class="dict-none">No dictionary entry for ${escHtml(nums.join(', '))}.</p></div>`;
-  } else {
-    body.innerHTML = found.map((x, idx) => {
-      const e = x.e;
-      let html = `<div class="dict-entry">`;
-      if (found.length > 1) html += `<div class="dict-num">${escHtml(x.g)}</div>`;
-      html += `<div class="dict-lemma">${e.l ? escHtml(e.l) : escHtml(x.g)}${e.t ? ` <span class="dict-translit">(${escHtml(e.t)})</span>` : ''}</div>`;
-      if (e.d) html += `<p class="dict-def">${escHtml(e.d)}</p>`;
-      if (e.r) html += `<p class="dict-deriv">${escHtml(e.r)}</p>`;
-      if (e.k) html += `<p class="dict-kjv"><span class="dict-kjv-label">KJV:</span> ${escHtml(e.k)}</p>`;
-      if (e.th) {
-        html += `<div class="dict-section-label">Thayer's Lexicon</div>`;
-        html += `<p class="dict-def">${escHtml(e.th)}</p>`;
-      }
-      html += `</div>`;
-      return html;
-    }).join('');
+    dictOverlay.classList.add('open');
+    return;
   }
+
+  const wl = wordText
+    ? stripDiacritics(String(wordText).replace(/[.,:;!?·-]+$/g, '')).toLowerCase()
+    : '';
+  const isNT = !(currentBook in OT_BOOKS);
+  const hasH = found.some(x => x.g.startsWith('H'));
+  if (hasH && ((wl && !isNT) || !wl) && !window._DATA_bdb) await ensureDictData('bdb');
+
+  const scored = found.map(f => ({ f, s: f.g.startsWith('H')
+    ? scoreDictTokens(window._DATA_bdb ? window._DATA_bdb[f.g] : '', wl)
+    : scoreDictTokens(f.e ? f.e.k : '', wl) }));
+  scored.sort((a, b) => b.s - a.s);
+
+  let cur = scored[0].f;
+  if (preferred) {
+    const prec = found.find(f => f.g === preferred);
+    if (prec) cur = prec;
+  } else if (wl) {
+    const gBest = scored.find(z => z.f.g.startsWith('G'));
+    const hBest = scored.find(z => z.f.g.startsWith('H'));
+    if (isNT) {
+      if (gBest && gBest.s >= 3) cur = gBest.f;
+      else if (hBest && hBest.s > (gBest ? gBest.s : 0)) cur = hBest.f;
+    } else {
+      if (hBest && hBest.s >= 3) cur = hBest.f;
+      else if (gBest && gBest.s > (hBest ? hBest.s : 0)) cur = gBest.f;
+    }
+  }
+
+  const hasG = found.some(x => x.g.startsWith('G'));
+  if (activeDict === 'thayers') titleEl.textContent = "Thayer's Greek Lexicon";
+  else if (found.length === 1) titleEl.textContent = hasH ? "Strong's Hebrew Dictionary" : "Strong's Greek Dictionary";
+  else if (hasG && hasH) titleEl.textContent = "Strong's Dictionary (Greek + Hebrew)";
+  else titleEl.textContent = hasH ? "Strong's Hebrew Dictionary" : "Strong's Greek Dictionary";
+
+  let html = '';
+  if (found.length > 1) {
+    html += `<div class="dict-chips">${found.map(f =>
+      `<button class="dict-chip${f.g === cur.g ? ' active' : ''}" data-g="${escHtml(f.g)}" type="button">${escHtml(f.g)}</button>`).join('')}</div>`;
+  }
+  const curE = cur.g.startsWith('H') ? null : cur.e;
+  html += `<div class="current-entry-wrap">${renderDictEntry(cur.g, curE)}</div>`;
+  body.innerHTML = html;
   dictOverlay.classList.add('open');
 }
 
 dictOverlay.querySelector('.dict-close').onclick = dictClose;
-dictOverlay.addEventListener('click', (e) => {
+dictOverlay.addEventListener('click', async (e) => {
+  const chip = e.target.closest('.dict-chip');
+  if (chip) {
+    const g = chip.getAttribute('data-g');
+    const isH = g.startsWith('H');
+    if (isH && !window._DATA_bdb) await ensureDictData('bdb');
+    dictOverlay.querySelectorAll('.dict-chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-g') === g));
+    const wrap = dictOverlay.querySelector('.current-entry-wrap');
+    if (wrap) wrap.innerHTML = renderDictEntry(g, isH ? null : window._DATA_lexicon && window._DATA_lexicon[g]);
+    return;
+  }
   if (e.target === dictOverlay) dictClose();
 });
 
@@ -2481,7 +2558,7 @@ dictSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') dict
 versesContainer.addEventListener('click', (e) => {
   if (timestampModeCb.checked) return;
   const w = e.target.closest('.w[data-sn]');
-  if (w) { openWordDict(w.getAttribute('data-sn')); return; }
+  if (w) { openWordDict(w.getAttribute('data-sn'), w.getAttribute('data-word'), w.getAttribute('data-g')); return; }
   const vEl = e.target.closest('.verse[data-index]');
   if (!vEl) return;
   const idx = parseInt(vEl.dataset.index, 10);
