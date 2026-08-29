@@ -177,6 +177,8 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <select id="bookmarkSelect" aria-label="Jump to bookmark"><option value="">Bookmarks&hellip;</option></select>
     <button id="deleteBookmarkBtn" title="Delete selected bookmark">&#128465;</button>
     <button id="exportBookmarksBtn" title="Export bookmarks as JSON file">&#128190; Export</button>
+    <button id="importBookmarksBtn" title="Import bookmarks from a JSON file">&#128190; Import</button>
+    <input type="file" id="importBookmarksFile" accept=".json,application/json" style="display:none">
     <button id="inspireBtn" title="Pick a random verse">&#10024; Inspire Me</button>
     <button id="dyslexiaBtn" title="Toggle Dyslexia-friendly mode" style="font-weight:700;font-size:1rem;">Dy</button>
     <button id="updateBtn" title="Check for the latest Linux AppImage">&#8595; Update</button>
@@ -891,6 +893,9 @@ const audioFileInput = $('audioFileInput');
 const bookmarkBtn = $('bookmarkBtn');
 const bookmarkSelect = $('bookmarkSelect');
 const deleteBookmarkBtn = $('deleteBookmarkBtn');
+const exportBookmarksBtn = $('exportBookmarksBtn');
+const importBookmarksBtn = $('importBookmarksBtn');
+const importBookmarksFile = $('importBookmarksFile');
 const autoScrollCb = $('autoScroll');
 autoScrollCb.onchange = () => { userScrolledAway = false; };
 const showStrongsCb = $('showStrongs');
@@ -1224,6 +1229,8 @@ bookmarkBtn.onclick = () => {
     book: currentBook,
     chapter: currentChapter,
     verseIndex: currentVerseIndex >= 0 ? currentVerseIndex : 0,
+    createdAt: new Date().toISOString(),
+    notes: null,
     audioTime: audio.src ? audio.currentTime : null
   };
   const list = getBookmarks();
@@ -1244,6 +1251,98 @@ deleteBookmarkBtn.onclick = () => {
   saveBookmarksList(list.filter(b => b.id !== id));
   renderBookmarkSelect();
   statusEl.textContent = 'Bookmark deleted.';
+};
+
+const BOOKMARK_SCHEMA_VERSION = 1;
+
+function exportableBookmark(bm) {
+  const cfg = VERSIONS[bm.version];
+  return {
+    id: bm.id,
+    label: bm.label,
+    version: bm.version,
+    versionLabel: cfg ? cfg.label : bm.version,
+    reference: `${bm.book} ${bm.chapter}:${(bm.verseIndex || 0) + 1}`,
+    book: bm.book,
+    chapter: bm.chapter,
+    verseIndex: bm.verseIndex,
+    audioTime: typeof bm.audioTime === 'number' ? bm.audioTime : null,
+    createdAt: bm.createdAt || null,
+    notes: typeof bm.notes === 'string' ? bm.notes : (bm.notes || null)
+  };
+}
+
+exportBookmarksBtn.onclick = () => {
+  const list = getBookmarks();
+  if (list.length === 0) { statusEl.textContent = 'No bookmarks to export.'; return; }
+  const payload = {
+    app: 'Holy-bible-A.S',
+    type: 'bookmarks',
+    schema: BOOKMARK_SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    bookmarks: list.map(exportableBookmark)
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `holy-bible-bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  statusEl.textContent = `Exported ${list.length} bookmark${list.length === 1 ? '' : 's'} as JSON.`;
+};
+
+function normalizeImportedBookmark(b) {
+  if (!b || typeof b !== 'object' || !b.book || !b.chapter) return null;
+  const chapter = Number(b.chapter);
+  const verseIndex = Number(b.verseIndex);
+  if (!Number.isFinite(chapter)) return null;
+  return {
+    id: typeof b.id === 'string' && b.id ? b.id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    label: typeof b.label === 'string' && b.label.trim() ? b.label.trim() : `${b.book} ${chapter}:${Number.isFinite(verseIndex) ? verseIndex + 1 : 1}`,
+    version: VERSIONS[b.version] ? b.version : versionSelect.value,
+    book: b.book,
+    chapter,
+    verseIndex: Number.isFinite(verseIndex) ? verseIndex : 0,
+    createdAt: typeof b.createdAt === 'string' ? b.createdAt : new Date().toISOString(),
+    notes: typeof b.notes === 'string' ? b.notes : null,
+    audioTime: typeof b.audioTime === 'number' ? b.audioTime : null
+  };
+}
+
+importBookmarksBtn.onclick = () => { importBookmarksFile.click(); };
+
+importBookmarksFile.onchange = () => {
+  const file = importBookmarksFile.files && importBookmarksFile.files[0];
+  importBookmarksFile.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try {
+      parsed = JSON.parse(String(reader.result));
+    } catch (e) {
+      statusEl.textContent = 'Import failed: not valid JSON.';
+      return;
+    }
+    let raw = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.bookmarks) ? parsed.bookmarks : null);
+    if (!raw) {
+      statusEl.textContent = 'Import failed: no bookmarks array in file.';
+      return;
+    }
+    const imported = raw.map(normalizeImportedBookmark).filter(Boolean);
+    if (imported.length === 0) { statusEl.textContent = 'Import failed: no valid bookmarks found.'; return; }
+    const existing = getBookmarks();
+    const byId = new Map(existing.map(b => [b.id, b]));
+    imported.forEach(b => byId.set(b.id, b));
+    saveBookmarksList(Array.from(byId.values()));
+    renderBookmarkSelect();
+    statusEl.textContent = `Imported ${imported.length} bookmark${imported.length === 1 ? '' : 's'}.`;
+  };
+  reader.onerror = () => { statusEl.textContent = 'Import failed: could not read file.'; };
+  reader.readAsText(file);
 };
 
 bookmarkSelect.onchange = () => {
