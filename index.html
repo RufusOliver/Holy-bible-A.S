@@ -2919,11 +2919,30 @@ function fliteSynthVerse(text, voice, cb) {
   }).catch((e) => cb(e));
 }
 
+let fliteWordList = null;
+
 function fliteSpeakVerse() {
   if (!ttsRunning) return;
   const text = verses[ttsIdx] || '';
   if (!text) { ttsIdx++; ttsSpeak(); return; }
-  fliteSynthVerse(text, 1, (err, res) => {
+  const tokens = text.split(/(\s+)/).filter(t => !t.match(/^\s+$/));
+  const verseEl = document.querySelector(`.verse[data-index="${ttsIdx}"]`);
+  const wordEls = verseEl ? verseEl.querySelectorAll('.w') : [];
+  fliteWordList = tokens.map((t, i) => ({
+    text: t,
+    els: wordEls.length === tokens.length ? [wordEls[i]] : []
+  }));
+  highlightVerse(ttsIdx);
+  ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (Flite)...`;
+  flitePlayWord(0);
+}
+
+function flitePlayWord(wi) {
+  if (!ttsRunning) return;
+  if (wi >= fliteWordList.length) { ttsIdx++; ttsSpeak(); return; }
+  const word = fliteWordList[wi];
+  if (!word.text) { flitePlayWord(wi + 1); return; }
+  fliteSynthVerse(word.text, 1, (err, res) => {
     if (!ttsRunning) return;
     if (err) {
       ttsStatusEl.textContent = 'Flite error: ' + err.message;
@@ -2933,19 +2952,28 @@ function fliteSpeakVerse() {
     let ctx;
     try { ctx = fliteAudioCtx(); } catch (e) { ttsStop(); return; }
     clearWordHighlights();
+    word.els.forEach(el => el.classList.add('wa'));
     const n = res.samples.length;
     const f32 = new Float32Array(n);
     for (let i = 0; i < n; i++) f32[i] = res.samples[i] / 32768;
     const buf = ctx.createBuffer(1, n, res.rate);
     buf.copyToChannel(f32, 0);
-    fliteNode = ctx.createBufferSource();
-    fliteNode.buffer = buf;
+    const node = ctx.createBufferSource();
+    node.buffer = buf;
     fliteGain.gain.value = parseFloat(volumeSlider.value) || 1;
-    fliteNode.connect(fliteGain);
-    highlightVerse(ttsIdx);
-    ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (Flite)...`;
-    fliteNode.onended = () => { if (ttsRunning) { ttsIdx++; ttsSpeak(); } };
-    fliteNode.start();
+    node.connect(fliteGain);
+    fliteNode = node;
+    node.onended = () => {
+      if (ttsRunning && fliteNode === node) flitePlayWord(wi + 1);
+    };
+    if (fliteNode === node) {
+      if (word.els.length && !userScrolledAway) {
+        programmaticScroll = true;
+        word.els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scheduleProgrammaticScrollEnd();
+      }
+      node.start();
+    }
   });
 }
 
