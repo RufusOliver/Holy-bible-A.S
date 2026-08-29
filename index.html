@@ -48,6 +48,7 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .w { display: inline-block; transition: background 0.15s, color 0.15s; border-radius: 2px; padding: 0 1px; }
 .w[data-sn] { cursor: pointer; }
 .w[data-sn]:hover { background: rgba(76, 175, 80, 0.18); }
+body.parallel .verse .w.diff { background: rgba(255, 235, 59, 0.2); border-bottom: 2px solid #ffc107; border-radius: 2px; }
 .dict-overlay { position: fixed; inset: 0; background: rgba(10, 10, 20, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
 .dict-overlay.open { display: flex; }
 .dict-box { background: #0d2a0d; border: 1px solid #1a5c2a; border-radius: 8px; width: 100%; max-width: 620px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 12px 45px rgba(0,0,0,0.6); }
@@ -171,7 +172,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <button id="loadBtn">Load Chapter</button>
     <label><input type="checkbox" id="autoScroll" checked> Auto-Scroll</label>
     <label><input type="checkbox" id="showStrongs"> Interlinear</label>
-    <label><input type="checkbox" id="parallelCb"> Parallel</label>
+    <label><input type="checkbox" id="parallelCb"> Compare</label>
     <label><input type="checkbox" id="timestampMode"> Set Timestamps</label>
     <button id="resetTimestampsBtn">Reset Timestamps</button>
     <button id="storageBtn" title="Save app data to a folder on disk (bookmarks, timestamps, position). Falls back to browser storage otherwise.">Storage: Browser</button>
@@ -189,9 +190,11 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 </header>
 
 <div id="parallelBar" class="parallel-bar">
-  <span class="parallel-label">3-Way Reading</span>
+  <span class="parallel-label">Compare</span>
   <select id="par2Sel" aria-label="Second pane version"></select>
   <select id="par3Sel" aria-label="Third pane version"></select>
+  <select id="par4Sel" aria-label="Fourth pane version"></select>
+  <label title="Highlight words that differ from the main pane"><input type="checkbox" id="diffCb"> Diff</label>
   <span class="parallel-hint">Pane 1 uses the main version dropdown above.</span>
 </div>
 
@@ -905,6 +908,8 @@ const parallelCb = $('parallelCb');
 const parallelBar = $('parallelBar');
 const par2Sel = $('par2Sel');
 const par3Sel = $('par3Sel');
+const par4Sel = $('par4Sel');
+const diffCb = $('diffCb');
 const updateBtn = $('updateBtn');
 
 async function checkForAppImageUpdate() {
@@ -1170,7 +1175,9 @@ function saveLastState() {
     strongs: showStrongsCb.checked,
     parallel: parallelCb.checked,
     par2: parallelCb.checked ? par2Sel.value : null,
-    par3: parallelCb.checked ? par3Sel.value : null
+    par3: parallelCb.checked ? par3Sel.value : null,
+    par4: parallelCb.checked ? par4Sel.value : null,
+    diff: diffCb.checked
   }));
 }
 
@@ -1470,6 +1477,8 @@ function applyResumedState() {
   }
   if (resumedState && resumedState.par2 && VERSIONS[resumedState.par2]) par2Sel.value = resumedState.par2;
   if (resumedState && resumedState.par3 && VERSIONS[resumedState.par3]) par3Sel.value = resumedState.par3;
+  if (resumedState && resumedState.par4 && VERSIONS[resumedState.par4]) par4Sel.value = resumedState.par4;
+  if (resumedState && typeof resumedState.diff === 'boolean') diffCb.checked = resumedState.diff;
   syncParallelUI();
   populateChapters();
   renderBookmarkSelect();
@@ -1541,8 +1550,9 @@ async function loadChapter() {
   verses = data;
   if (parallelEnabled()) {
     parallelData = await Promise.all([
-      (async () => { try { return await fetchChapterForVersion(par2Sel.value, bookNameForVersion(par2Sel.value, currentBook), currentChapter); } catch (e) { return null; } })(),
-      (async () => { try { return await fetchChapterForVersion(par3Sel.value, bookNameForVersion(par3Sel.value, currentBook), currentChapter); } catch (e) { return null; } })()
+      (async () => { try { return par2Sel.value ? await fetchChapterForVersion(par2Sel.value, bookNameForVersion(par2Sel.value, currentBook), currentChapter) : null; } catch (e) { return null; } })(),
+      (async () => { try { return par3Sel.value ? await fetchChapterForVersion(par3Sel.value, bookNameForVersion(par3Sel.value, currentBook), currentChapter) : null; } catch (e) { return null; } })(),
+      (async () => { try { return par4Sel.value ? await fetchChapterForVersion(par4Sel.value, bookNameForVersion(par4Sel.value, currentBook), currentChapter) : null; } catch (e) { return null; } })()
     ]);
   } else {
     parallelData = null;
@@ -1598,15 +1608,18 @@ function syncParallelUI() {
 function populateParallelSelects() {
   par2Sel.innerHTML = '';
   par3Sel.innerHTML = '';
+  par4Sel.innerHTML = '';
   Object.keys(VERSIONS).forEach(v => {
     par2Sel.add(new Option(VERSIONS[v].label, v));
     par3Sel.add(new Option(VERSIONS[v].label, v));
+    par4Sel.add(new Option(VERSIONS[v].label, v));
   });
   const mainV = versionSelect.value;
   const prefs = ['NHEB', 'Arabic', 'NAV', 'SBLGNT', 'Byzantine', 'Orthodox'];
   const avails = prefs.filter(p => p !== mainV);
   par2Sel.value = avails[0] || '';
   par3Sel.value = avails[1] || '';
+  par4Sel.value = avails[2] || '';
 }
 
 parallelCb.onchange = () => {
@@ -1616,6 +1629,8 @@ parallelCb.onchange = () => {
 };
 par2Sel.onchange = () => { saveLastState(); loadChapter(); };
 par3Sel.onchange = () => { saveLastState(); loadChapter(); };
+par4Sel.onchange = () => { saveLastState(); loadChapter(); };
+diffCb.onchange = () => { renderVerses(); };
 
 function interlinearEntry(word, verseNum, wordIdx, version) {
   const data = window._DATA_interlinear;
@@ -1632,12 +1647,13 @@ function interlinearEntry(word, verseNum, wordIdx, version) {
   return Array.isArray(gloss) ? [gloss[0], gloss[1]] : [lookupStrongs(word), gloss];
 }
 
-function verseMarkup(v, i, primary, version) {
+function verseMarkup(v, i, primary, version, diffFlags) {
   const showSn = paneInterlinear(version);
   const hebrew = interlinearCapableVersion(version || versionSelect.value) &&
     VERSIONS[version || versionSelect.value].lang === 'he';
   let wordIdx = 0;
   const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
+    const idx = wordIdx++;
     const wordAttr = ` data-word="${escHtml(tok)}"`;
     if (hebrew && showSn) {
       const nums = tok.match(/\d{1,4}/g) || [];
@@ -1650,35 +1666,73 @@ function verseMarkup(v, i, primary, version) {
       }
       return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}>${inner}</span>`;
     }
-    const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
-    wordIdx++;
+    const il = showSn ? interlinearEntry(tok, i + 1, idx, version) : null;
     const fullSn = il ? lookupStrongs(tok) : null;
     const sn = (il && il[0]) ? il[0] : fullSn;
     const gAttr = (il && il[0]) ? ` data-g="${escHtml(il[0])}"` : '';
     const snAttr = sn ? ` data-sn="${escHtml(fullSn || sn)}"` : '';
+    const diffAttr = diffFlags && diffFlags[idx] ? ' diff' : '';
     let inner = escHtml(tok);
     if (il && (il[0] || il[1])) {
       inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(tok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
     } else if (showSn && sn) {
       inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(tok)}`;
     }
-    return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}${gAttr}>${inner}</span>`;
+    return `<span class="w${diffAttr}" data-i="${ti}"${snAttr}${wordAttr}${gAttr}>${inner}</span>`;
   })()).join('');
   return `<div class="verse"${primary ? ` data-index="${i}"` : ''}>
     <span class="num">${i+1}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
   </div>`;
 }
 
+function tokenizeVerse(t) {
+  return t.split(/\s+/).filter(Boolean);
+}
+
+function normToken(t) {
+  return t.replace(/[\u2019\u02bc]/g, "'").toLowerCase().replace(/^[.,:;!?·“‘”()«»\-–—_*]+/, '').replace(/[.,:;!?·“‘”()«»\-–—_*]+$/, '');
+}
+
+function diffFlagsVerses(aText, bText) {
+  const a = tokenizeVerse(aText);
+  const b = tokenizeVerse(bText);
+  const n = a.length, m = b.length;
+  const eq = (x, y) => normToken(a[x]) === normToken(b[y]);
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = eq(i, j) ? 1 + dp[i + 1][j + 1] : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const flags = new Array(m).fill(false);
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (eq(i, j)) { i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { i++; }
+    else { flags[j] = true; j++; }
+  }
+  while (j < m) { flags[j] = true; j++; }
+  return flags;
+}
+
 function renderVerses() {
   if (parallelEnabled()) {
     const panes = [];
-    const paneVersions = [versionSelect.value, par2Sel.value, par3Sel.value];
-    const paneData = [verses, parallelData && parallelData[0], parallelData && parallelData[1]];
-    for (let p = 0; p < 3; p++) {
+    const selPairs = [[par2Sel, 0], [par3Sel, 1], [par4Sel, 2]]
+      .filter(([sel]) => sel.value)
+      .map(([sel, p]) => ({ p: p + 1, version: sel.value }));
+    const paneVersions = [versionSelect.value].concat(selPairs.map(s => s.version));
+    const paneData = [verses].concat(selPairs.map(s => parallelData && parallelData[s.p]));
+    for (let p = 0; p < paneVersions.length; p++) {
       const d = paneData[p];
-      const body = d && d.length
-        ? d.map((v, i) => verseMarkup(v, i, p === 0, paneVersions[p])).join('')
-        : `<div class="hint">This version has no verses for ${currentBook} ${currentChapter}.</div>`;
+      let body;
+      if (!d || !d.length) {
+        body = `<div class="hint">This version has no verses for ${currentBook} ${currentChapter}.</div>`;
+      } else if (p > 0 && diffCb.checked) {
+        body = d.map((v, i) => verseMarkup(v, i, false, paneVersions[p], diffFlagsVerses(paneData[0][i] || '', v))).join('');
+      } else {
+        body = d.map((v, i) => verseMarkup(v, i, p === 0, paneVersions[p])).join('');
+      }
       panes.push(`<div class="pane${p === 0 ? ' pane-primary' : ''}">
         <div class="pane-title">${escHtml(VERSIONS[paneVersions[p]] ? VERSIONS[paneVersions[p]].label : paneVersions[p])}</div>
         ${body}
