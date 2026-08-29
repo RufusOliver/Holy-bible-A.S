@@ -221,6 +221,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
   <select id="ttsVoice" aria-label="Select TTS voice"></select>
   <label class="tts-label"><input type="checkbox" id="loopNT"> Repeat New Testament</label>
   <label class="tts-label"><input type="checkbox" id="loopOT"> Repeat Old Testament</label>
+  <label class="tts-label"><input type="checkbox" id="loopPaul"> Repeat Paul's Letters</label>
   <label class="tts-label"><input type="checkbox" id="loopWhole"> Repeat Whole Bible</label>
   <span id="ttsStatus" class="tts-status"></span>
 </div>
@@ -3057,7 +3058,11 @@ function autoAdvanceChapter() {
   } else {
     const books = Object.keys(bookList);
     const idx = books.indexOf(currentBook);
-    if (idx < 0 || idx >= books.length - 1) {
+    const paul = paulLetterBooks(bookList);
+    if ($('loopPaul').checked && paul.length > 1 && currentBook === paul[paul.length - 1]) {
+      currentBook = paul[0];
+      currentChapter = 1;
+    } else if (idx < 0 || idx >= books.length - 1) {
       if ($('loopWhole').checked) {
         currentBook = books[0];
         currentChapter = 1;
@@ -3111,6 +3116,20 @@ function firstNTBook() {
   if (v === 'LXX' || v === 'Apocrypha') return null;
   if (v === 'Arabic') return Object.keys(AR_BOOKS)[39]; // Matthew in Arabic
   return 'Matthew';
+}
+
+const PAUL_LETTERS = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
+
+function paulLetterBooks(bookList) {
+  const ntBase = firstNTBook();
+  if (!ntBase) return [];
+  const names = Object.keys(bookList);
+  const base = names.indexOf(ntBase);
+  if (base < 0) return [];
+  const ntOrder = Object.keys(NT_BOOKS);
+  return PAUL_LETTERS
+    .map(name => names[base + ntOrder.indexOf(name)])
+    .filter(Boolean);
 }
 
 function ttsSpeak() {
