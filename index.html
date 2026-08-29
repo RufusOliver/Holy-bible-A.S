@@ -28,6 +28,8 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .controls button.active { background: #4caf50; }
 .controls label { font-size: 0.85rem; color: #8fbc8f; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 .controls input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.controls label.disabled { opacity: 0.45; cursor: not-allowed; }
+.controls label.disabled input { cursor: not-allowed; }
 .audio-bar { background: #0d2a0d; padding: 8px 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #1a5c2a; }
 .audio-bar .time { font-size: 0.85rem; color: #8fbc8f; min-width: 100px; }
 #seekBar { flex: 1; min-width: 100px; accent-color: #4caf50; }
@@ -378,8 +380,7 @@ function getBookList() {
   if (v === 'LXX') return OT_BOOKS;
   if (v === 'Apocrypha') return APOC_BOOKS;
   if (v === 'WLCa' || v === 'WLC' || v === 'WLCC' || v === 'HAC') return OT_BOOKS;
-  if (v === 'DHNT') return NT_BOOKS;
-  if (v === 'TR' || v === 'NTGT') return NT_BOOKS;
+  if (v === 'DHNT' || v === 'NTGT' || v === 'TR' || v === 'SBLGNT' || v === 'ElzevirTR' || v === 'WPNT') return NT_BOOKS;
   if (v === 'ain_ABT') { const m = {}; Object.assign(m, {'Psalms': 150}, NT_BOOKS); return m; }
   const all = {};
   Object.assign(all, OT_BOOKS, NT_BOOKS);
@@ -1343,6 +1344,8 @@ function applyResumedState() {
   const initRtl = initLang === 'ar' || initLang === 'he' || initLang === 'aii';
   document.body.classList.toggle('rtl', initRtl);
   document.documentElement.lang = initRtl ? initLang : 'en';
+  showStrongsCb.disabled = !interlinearCapableVersion(versionSelect.value);
+  showStrongsCb.closest('label') && showStrongsCb.closest('label').classList.toggle('disabled', showStrongsCb.disabled);
 
   bookSelect.innerHTML = '';
   Object.keys(getBookList()).forEach(b => bookSelect.add(new Option(b, b)));
@@ -1380,6 +1383,8 @@ versionSelect.onchange = () => {
   const isRtl = lang === 'ar' || lang === 'he' || lang === 'aii';
   document.body.classList.toggle('rtl', isRtl);
   document.documentElement.lang = isRtl ? lang : 'en';
+  showStrongsCb.disabled = !interlinearCapableVersion(versionSelect.value);
+  showStrongsCb.closest('label') && showStrongsCb.closest('label').classList.toggle('disabled', showStrongsCb.disabled);
   const bl = getBookList();
   const prevBook = bookSelect.value;
   bookSelect.innerHTML = '';
@@ -1468,8 +1473,18 @@ function lookupStrongs(word) {
   return Array.isArray(sn) ? sn.join('/') : sn;
 }
 
+function interlinearCapableVersion(v) {
+  const cfg = VERSIONS[v];
+  return cfg && (cfg.lang === 'he' || cfg.lang === 'grc');
+}
+
+function paneInterlinear(version) {
+  if (!showStrongsCb.checked) return false;
+  return interlinearCapableVersion(version || versionSelect.value);
+}
+
 function interlinearEnabled() {
-  return showStrongsCb.checked && 'Matthew' in getBookList();
+  return paneInterlinear(versionSelect.value);
 }
 
 function parallelEnabled() {
@@ -1519,14 +1534,27 @@ function interlinearEntry(word, verseNum, wordIdx, version) {
 }
 
 function verseMarkup(v, i, primary, version) {
-  const showSn = showStrongsCb.checked;
+  const showSn = paneInterlinear(version);
+  const hebrew = interlinearCapableVersion(version || versionSelect.value) &&
+    VERSIONS[version || versionSelect.value].lang === 'he';
   let wordIdx = 0;
   const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
+    const wordAttr = ` data-word="${escHtml(tok)}"`;
+    if (hebrew && showSn) {
+      const nums = tok.match(/\d{1,4}/g) || [];
+      const script = tok.replace(/\d{1,4}/g, '');
+      const snStr = nums.length ? nums.map(n => 'H' + n).join('/') : null;
+      const snAttr = snStr ? ` data-sn="${escHtml(snStr)}"` : '';
+      let inner = escHtml(script);
+      if (snStr) {
+        inner += nums.map(n => `<span class="sn">${escHtml(n)}</span>`).join('');
+      }
+      return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}>${inner}</span>`;
+    }
     const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
     wordIdx++;
     const fullSn = il ? lookupStrongs(tok) : null;
     const sn = (il && il[0]) ? il[0] : fullSn;
-    const wordAttr = ` data-word="${escHtml(tok)}"`;
     const gAttr = (il && il[0]) ? ` data-g="${escHtml(il[0])}"` : '';
     const snAttr = sn ? ` data-sn="${escHtml(fullSn || sn)}"` : '';
     let inner = escHtml(tok);
@@ -2606,7 +2634,9 @@ function getFilteredVoices() {
   const voices = speechSynthesis.getVoices();
   const langFilter = VERSIONS[versionSelect.value].lang;
   const prefixes = langPrefixes(langFilter);
-  return offlineVoicePool(voices).filter(v => prefixes.some(p => v.lang.startsWith(p)));
+  return offlineVoicePool(voices)
+    .filter(v => !/female|f[1-4](?![a-z])/i.test(v.name))
+    .filter(v => prefixes.some(p => v.lang.startsWith(p)));
 }
 
 function loadVoices() {
