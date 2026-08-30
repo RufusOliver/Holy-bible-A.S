@@ -54,6 +54,7 @@ The generated AppImage is written to [`build/`](build/).
 - **Parallel reading** — Compare up to 3 translations side by side
 - **10 Dictionaries** — Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, Gill's
 - **Interlinear mode** — Strong's numbers on every word with click-to-define
+- **King James Dictionary** — For the KJV, AKJV, and Webster's translations, the Interlinear button tags archaic English words (e.g. anon, asswage, hast, hearken) that open the built-in King James Dictionary of 1611-era meanings instead of Strong's numbers
 - **Bookmarks** — Save reading position with File System Access API folder storage + localStorage fallback
 - **Dyslexia-friendly mode** — OpenDyslexic font, adjustable font size/letter spacing/line height, 6 background presets, reading ruler
 - **RTL support** — Arabic, Hebrew, and Aramaic with proper right-to-left layout

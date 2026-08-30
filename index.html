@@ -74,6 +74,11 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .dict-section-label { color: #4caf50; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
 .dict-section-label:first-child { margin-top: 0; }
 .dict-topical { margin-top: 6px; color: #c8e6c9; line-height: 1.55; font-size: 0.92rem; white-space: pre-wrap; }
+.kjv-dict-kbd { color: #c8e6c9; font-size: 0.7rem; font-style: italic; margin-top: 10px; }
+.kjv-dict-word { color: #ffc107; font-weight: 600; }
+.w[data-kjv] { cursor: pointer; text-decoration: underline dotted #4caf50; text-underline-offset: 2px; }
+.w[data-kjv]:hover { background: rgba(76, 175, 80, 0.18); }
+.w[data-kjv].wa { background: #4caf50; color: #fff; }
 .help-overlay { position: fixed; inset: 0; background: rgba(10, 10, 20, 0.75); display: none; align-items: center; justify-content: center; z-index: 2100; padding: 16px; }
 .help-overlay.open { display: flex; }
 .help-box { background: #0d2a0d; border: 1px solid #1a5c2a; border-radius: 8px; width: 100%; max-width: 460px; box-shadow: 0 12px 45px rgba(0,0,0,0.6); }
@@ -99,6 +104,7 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .w .sn { display: block; font-size: 0.55em; color: #7a9a7a; line-height: 1; margin-bottom: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
 .w.wa .sn { color: #c8e6c9; }
 .w .en { display: block; font-size: 0.55em; color: #81c784; line-height: 1; margin-top: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
+.w .en.kjv { color: #ffc107; font-size: 0.6em; line-height: 1.15; margin-top: 2px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
 .w.wa .en { color: #c8e6c9; }
 .timestamp-badge { float: right; font-size: 0.65rem; color: #3a5a3a; margin-left: 8px; font-family: monospace; }
 #status { padding: 4px 12px; font-size: 0.8rem; color: #6a8a6a; text-align: center; }
@@ -212,9 +218,10 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <span id="ttsSpeedVal">1x</span>
   </label>
   <select id="ttsVoice" aria-label="Select TTS voice"></select>
-  <label class="tts-label"><input type="checkbox" id="loopNT"> Repeat New Testament</label>
+<label class="tts-label"><input type="checkbox" id="loopNT"> Repeat New Testament</label>
   <label class="tts-label"><input type="checkbox" id="loopOT"> Repeat Old Testament</label>
   <label class="tts-label"><input type="checkbox" id="loopWhole"> Repeat Whole Bible</label>
+  <label class="tts-label"><input type="checkbox" id="loopPaul"> Repeat Paul's Letters</label>
   <span id="ttsStatus" class="tts-status"></span>
 </div>
 
@@ -265,6 +272,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 <script src="data/strongs.js"></script>
 <script src="data/lexicon.js"></script>
 <script src="data/interlinear.js"></script>
+<script src="data/kjvdict.js"></script>
 <script src="data/flite/flite.js"></script>
 <script>
 const NT_BOOKS = {
@@ -279,6 +287,14 @@ const NT_BOOKS = {
   "1 John": 5, "2 John": 1, "3 John": 1, "Jude": 1,
   "Revelation": 22
 };
+
+const PAUL_LETTERS_EN = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
+
+const PAUL_BOOKS = [
+  "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
+  "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians",
+  "1 Timothy", "2 Timothy", "Titus", "Philemon"
+];
 
 const OT_BOOKS = {
   "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36,
@@ -1468,6 +1484,25 @@ function lookupStrongs(word) {
   return Array.isArray(sn) ? sn.join('/') : sn;
 }
 
+// KJV and KJV-based translations use the archaic KJV dictionary rather
+// than Strong's numbers (KJV English words have no Greek/Hebrew alignment).
+const KJV_DICT_VERSIONS = ['KJV', 'AKJV', 'WEBSTER'];
+
+function isKjvDictVersion(version) {
+  return KJV_DICT_VERSIONS.includes(version || versionSelect.value);
+}
+
+function lookupKjvDict(word) {
+  const data = window._DATA_kjvdict;
+  if (!data) return null;
+  const key = stripDiacritics(String(word).replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
+  if (data[key]) return data[key];
+  // Handle bracketed KJV additions, e.g. "[was]" -> "was"
+  const inner = String(word).replace(/^\[|\]$/g, '').replace(/[.,:;!?·-]+$/g, '');
+  const innerKey = stripDiacritics(inner).toLowerCase();
+  return data[innerKey] || null;
+}
+
 function interlinearEnabled() {
   return showStrongsCb.checked && 'Matthew' in getBookList();
 }
@@ -1520,6 +1555,8 @@ function interlinearEntry(word, verseNum, wordIdx, version) {
 
 function verseMarkup(v, i, primary, version) {
   const showSn = showStrongsCb.checked;
+  const kjvMode = showSn && isKjvDictVersion(version);
+  const kjvData = kjvMode ? (window._DATA_kjvdict || null) : null;
   let wordIdx = 0;
   const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
     const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
@@ -1529,13 +1566,20 @@ function verseMarkup(v, i, primary, version) {
     const wordAttr = ` data-word="${escHtml(tok)}"`;
     const gAttr = (il && il[0]) ? ` data-g="${escHtml(il[0])}"` : '';
     const snAttr = sn ? ` data-sn="${escHtml(fullSn || sn)}"` : '';
+    // For KJV-family versions, tag words that have an archaic dictionary entry so
+    // clicking them opens the King James Dictionary instead of Strong's, and show their
+    // definition as an interlinear gloss when the Interlinear button is on.
+    const kjvDef = kjvData ? lookupKjvDict(tok) : null;
+    const kjvAttr = kjvDef ? ` data-kjv="1"` : '';
     let inner = escHtml(tok);
     if (il && (il[0] || il[1])) {
       inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(tok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
     } else if (showSn && sn) {
       inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(tok)}`;
+    } else if (showSn && kjvDef) {
+      inner = `${escHtml(tok)}<span class="en kjv">${escHtml(kjvDef)}</span>`;
     }
-    return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}${gAttr}>${inner}</span>`;
+    return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}${gAttr}${kjvAttr}>${inner}</span>`;
   })()).join('');
   return `<div class="verse"${primary ? ` data-index="${i}"` : ''}>
     <span class="num">${i+1}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
@@ -2097,6 +2141,59 @@ dictOverlay.querySelectorAll('.dict-tab').forEach(tab => {
   });
 });
 
+// King James Dictionary popup: opened when clicking a KJV word that has an
+// archaic-word entry (used by KJV/AKJV/WEBSTER instead of Strong's numbers).
+const kjvOverlay = document.createElement('div');
+kjvOverlay.className = 'dict-overlay';
+kjvOverlay.innerHTML = `<div class="dict-box">
+  <div class="dict-head"><span class="dict-title">King James Dictionary</span>
+  <button class="dict-close" aria-label="Close dictionary" title="Close">&#10005;</button></div>
+  <div class="dict-body"></div>
+</div>`;
+document.body.appendChild(kjvOverlay);
+
+function kjvOverlayClose() {
+  kjvOverlay.classList.remove('open');
+}
+kjvOverlay.querySelector('.dict-close').onclick = kjvOverlayClose;
+kjvOverlay.addEventListener('click', (e) => { if (e.target === kjvOverlay) kjvOverlayClose(); });
+
+function normKjvLookup(word) {
+  const data = window._DATA_kjvdict;
+  if (!data) return null;
+  let key = stripDiacritics(String(word).replace(/^\[|\]$/g, '').replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
+  return data[key] || null;
+}
+
+function openKjvDict(wordText, version) {
+  const data = window._DATA_kjvdict;
+  const body = kjvOverlay.querySelector('.dict-body');
+  const t = kjvOverlay.querySelector('.dict-title');
+  if (!data) {
+    t.textContent = 'King James Dictionary';
+    body.innerHTML = `<div class="dict-entry"><p class="dict-none">The King James Dictionary is not loaded.</p></div>`;
+    kjvOverlay.classList.add('open');
+    return;
+  }
+  const word = String(wordText).trim();
+  const def = normKjvLookup(word) || lookupKjvDict(word);
+  t.textContent = 'King James Dictionary';
+  if (!def) {
+    body.innerHTML = `<div class="dict-entry">
+      <div class="dict-lemma">${escHtml(word)}</div>
+      <p class="dict-none">No King James Dictionary entry for "${escHtml(word)}".</p>
+      <p class="kjv-dict-kbd">This word keeps its modern meaning in the King James text.</p>
+    </div>`;
+  } else {
+    body.innerHTML = `<div class="dict-entry">
+      <div class="dict-lemma">${escHtml(word)}</div>
+      <p class="dict-def">${escHtml(def)}</p>
+      <p class="kjv-dict-kbd">King James Dictionary &middot; archaic KJV English</p>
+    </div>`;
+  }
+  kjvOverlay.classList.add('open');
+}
+
 function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
@@ -2142,7 +2239,7 @@ helpOverlay.innerHTML = `<div class="help-box">
     <div class="help-row"><span class="help-key">&larr; Arrow</span><span class="help-desc">Seek backward 3 seconds</span></div>
     <div class="help-row"><span class="help-key">&rarr; Arrow</span><span class="help-desc">Seek forward 3 seconds</span></div>
     <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Close dictionary popup</span></div>
-    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
+    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. In the KJV, AKJV, and Webster's versions, underlined words open the King James Dictionary of archaic English. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
   </div>
 </div>`;
 document.body.appendChild(helpOverlay);
@@ -2561,9 +2658,16 @@ dictSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') dict
 
 versesContainer.addEventListener('click', (e) => {
   if (timestampModeCb.checked) return;
+  const vEl = e.target.closest('.verse[data-index]');
+  // KJV-family versions with Interlinear on always use the King James Dictionary
+  // when a word is clicked - never Strong's.
+  const kjw = e.target.closest('.w[data-word]');
+  if (kjw && showStrongsCb.checked && isKjvDictVersion(versionSelect.value)) {
+    openKjvDict(kjw.getAttribute('data-word'), versionSelect.value);
+    return;
+  }
   const w = e.target.closest('.w[data-sn]');
   if (w) { openWordDict(w.getAttribute('data-sn'), w.getAttribute('data-word'), w.getAttribute('data-g')); return; }
-  const vEl = e.target.closest('.verse[data-index]');
   if (!vEl) return;
   const idx = parseInt(vEl.dataset.index, 10);
   if (isNaN(idx)) return;
@@ -2857,6 +2961,25 @@ function autoAdvanceChapter() {
         setTimeout(ttsStop, 1500);
         return;
       }
+    } else if ($('loopPaul').checked) {
+      const lastPaul = lastPaulBook();
+      const firstPaul = firstPaulBook();
+      if (currentBook === lastPaul && firstPaul && bookList[firstPaul]) {
+        currentBook = firstPaul;
+        currentChapter = 1;
+      } else {
+        currentBook = books[idx + 1];
+        currentChapter = 1;
+      }
+    } else if ($('loopPaul').checked && currentBook === lastPaulLetter()) {
+      const romans = firstPaulLetter();
+      if (romans && bookList[romans]) {
+        currentBook = romans;
+        currentChapter = 1;
+      } else {
+        currentBook = books[idx + 1];
+        currentChapter = 1;
+      }
     } else if ($('loopOT').checked) {
       const nextBook = books[idx + 1];
       const firstNT = firstNTBook();
@@ -2865,6 +2988,15 @@ function autoAdvanceChapter() {
         currentChapter = 1;
       } else {
         currentBook = nextBook;
+        currentChapter = 1;
+      }
+    } else if ($('loopPaul').checked && currentBook === lastPaulBook()) {
+      const firstPaul = firstPaulBook();
+      if (firstPaul && bookList[firstPaul]) {
+        currentBook = firstPaul;
+        currentChapter = 1;
+      } else {
+        currentBook = books[idx + 1];
         currentChapter = 1;
       }
     } else {
@@ -2892,6 +3024,22 @@ function firstNTBook() {
   if (v === 'LXX' || v === 'Apocrypha') return null;
   if (v === 'Arabic') return Object.keys(AR_BOOKS)[39]; // Matthew in Arabic
   return 'Matthew';
+}
+
+const PAUL_BOOK_ENGLISH = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
+
+function firstPaulBook() {
+  const v = versionSelect.value;
+  if (v === 'LXX' || v === 'Apocrypha') return null;
+  if (v === 'Arabic') return AR_ENGLISH_TO_ARABIC['Romans'] || null;
+  return 'Romans';
+}
+
+function lastPaulBook() {
+  const v = versionSelect.value;
+  if (v === 'LXX' || v === 'Apocrypha') return null;
+  if (v === 'Arabic') return AR_ENGLISH_TO_ARABIC['Philemon'] || null;
+  return 'Philemon';
 }
 
 function ttsSpeak() {
@@ -2954,6 +3102,7 @@ function ttsSpeak() {
 // Keyboard shortcuts for TTS and accessibility
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
+    if (kjvOverlay.classList.contains('open')) { e.preventDefault(); kjvOverlayClose(); return; }
     if (dictOverlay.classList.contains('open')) { e.preventDefault(); dictClose(); return; }
     if (helpOverlay.classList.contains('open')) { e.preventDefault(); helpOverlay.classList.remove('open'); return; }
   }
