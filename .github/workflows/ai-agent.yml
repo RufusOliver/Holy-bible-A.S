@@ -140,10 +140,12 @@ jobs:
           echo "::notice::AI review skipped. Add OPENAI_API_KEY secret to enable."
 
   auto-fix:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -162,12 +164,11 @@ jobs:
             FIXED=$((FIXED + 1))
           fi
 
-          # Fix missing semicolons in data files
+          # Fix missing trailing semicolons in data files
           for f in data/*.js; do
-            CONTENT=$(tail -c 2 "$f")
-            if [ "$CONTENT" != ";" ]; then
-              echo "Fixing missing semicolon in $f"
-              echo ";" >> "$f"
+            if [ "$(tail -c 1 "$f")" != ";" ]; then
+              echo "Fixing missing trailing semicolon in $f"
+              printf ';' >> "$f"
               FIXED=$((FIXED + 1))
             fi
           done
@@ -188,7 +189,7 @@ jobs:
           git add -A
           if ! git diff --cached --quiet; then
             git commit -m "🤖 Auto-fix: trailing whitespace, missing semicolons"
-            git push
+            git push origin HEAD:refs/heads/${{ github.head_ref }}
             echo "committed=true" >> $GITHUB_OUTPUT
           else
             echo "No fixes needed"
