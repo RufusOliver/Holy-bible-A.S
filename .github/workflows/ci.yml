@@ -80,6 +80,7 @@ jobs:
               [/id=\"ttsPlayBtn\"/, 'ttsPlayBtn'],
               [/id=\"dyslexiaBtn\"/, 'dyslexiaBtn'],
               [/data\/nestle1904\.js/, 'nestle1904.js loaded'],
+              [/data\/sblgnt\.js/, 'sblgnt.js loaded'],
               [/data\/strongs\.js/, 'strongs.js loaded'],
               [/data\/lexicon\.js/, 'lexicon.js loaded'],
             ];

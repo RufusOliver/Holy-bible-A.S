@@ -28,6 +28,8 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .controls button.active { background: #4caf50; }
 .controls label { font-size: 0.85rem; color: #8fbc8f; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 .controls input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.controls label.disabled { opacity: 0.45; cursor: not-allowed; }
+.controls label.disabled input { cursor: not-allowed; }
 .audio-bar { background: #0d2a0d; padding: 8px 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #1a5c2a; }
 .audio-bar .time { font-size: 0.85rem; color: #8fbc8f; min-width: 100px; }
 #seekBar { flex: 1; min-width: 100px; accent-color: #4caf50; }
@@ -46,6 +48,7 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .w { display: inline-block; transition: background 0.15s, color 0.15s; border-radius: 2px; padding: 0 1px; }
 .w[data-sn] { cursor: pointer; }
 .w[data-sn]:hover { background: rgba(76, 175, 80, 0.18); }
+body.parallel .verse .w.diff { background: rgba(255, 235, 59, 0.2); border-bottom: 2px solid #ffc107; border-radius: 2px; }
 .dict-overlay { position: fixed; inset: 0; background: rgba(10, 10, 20, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
 .dict-overlay.open { display: flex; }
 .dict-box { background: #0d2a0d; border: 1px solid #1a5c2a; border-radius: 8px; width: 100%; max-width: 620px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 12px 45px rgba(0,0,0,0.6); }
@@ -74,11 +77,6 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .dict-section-label { color: #4caf50; font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
 .dict-section-label:first-child { margin-top: 0; }
 .dict-topical { margin-top: 6px; color: #c8e6c9; line-height: 1.55; font-size: 0.92rem; white-space: pre-wrap; }
-.kjv-dict-kbd { color: #c8e6c9; font-size: 0.7rem; font-style: italic; margin-top: 10px; }
-.kjv-dict-word { color: #ffc107; font-weight: 600; }
-.w[data-kjv] { cursor: pointer; text-decoration: underline dotted #4caf50; text-underline-offset: 2px; }
-.w[data-kjv]:hover { background: rgba(76, 175, 80, 0.18); }
-.w[data-kjv].wa { background: #4caf50; color: #fff; }
 .help-overlay { position: fixed; inset: 0; background: rgba(10, 10, 20, 0.75); display: none; align-items: center; justify-content: center; z-index: 2100; padding: 16px; }
 .help-overlay.open { display: flex; }
 .help-box { background: #0d2a0d; border: 1px solid #1a5c2a; border-radius: 8px; width: 100%; max-width: 460px; box-shadow: 0 12px 45px rgba(0,0,0,0.6); }
@@ -104,7 +102,6 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .w .sn { display: block; font-size: 0.55em; color: #7a9a7a; line-height: 1; margin-bottom: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
 .w.wa .sn { color: #c8e6c9; }
 .w .en { display: block; font-size: 0.55em; color: #81c784; line-height: 1; margin-top: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
-.w .en.kjv { color: #ffc107; font-size: 0.6em; line-height: 1.15; margin-top: 2px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: min(140px, 30vw); }
 .w.wa .en { color: #c8e6c9; }
 .timestamp-badge { float: right; font-size: 0.65rem; color: #3a5a3a; margin-left: 8px; font-family: monospace; }
 #status { padding: 4px 12px; font-size: 0.8rem; color: #6a8a6a; text-align: center; }
@@ -175,7 +172,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <button id="loadBtn">Load Chapter</button>
     <label><input type="checkbox" id="autoScroll" checked> Auto-Scroll</label>
     <label><input type="checkbox" id="showStrongs"> Interlinear</label>
-    <label><input type="checkbox" id="parallelCb"> Parallel</label>
+    <label><input type="checkbox" id="parallelCb"> Compare</label>
     <label><input type="checkbox" id="timestampMode"> Set Timestamps</label>
     <button id="resetTimestampsBtn">Reset Timestamps</button>
     <button id="storageBtn" title="Save app data to a folder on disk (bookmarks, timestamps, position). Falls back to browser storage otherwise.">Storage: Browser</button>
@@ -183,6 +180,8 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <select id="bookmarkSelect" aria-label="Jump to bookmark"><option value="">Bookmarks&hellip;</option></select>
     <button id="deleteBookmarkBtn" title="Delete selected bookmark">&#128465;</button>
     <button id="exportBookmarksBtn" title="Export bookmarks as JSON file">&#128190; Export</button>
+    <button id="importBookmarksBtn" title="Import bookmarks from a JSON file">&#128190; Import</button>
+    <input type="file" id="importBookmarksFile" accept=".json,application/json" style="display:none">
     <button id="inspireBtn" title="Pick a random verse">&#10024; Inspire Me</button>
     <button id="dyslexiaBtn" title="Toggle Dyslexia-friendly mode" style="font-weight:700;font-size:1rem;">Dy</button>
     <button id="updateBtn" title="Check for the latest Linux AppImage">&#8595; Update</button>
@@ -191,9 +190,11 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 </header>
 
 <div id="parallelBar" class="parallel-bar">
-  <span class="parallel-label">3-Way Reading</span>
+  <span class="parallel-label">Compare</span>
   <select id="par2Sel" aria-label="Second pane version"></select>
   <select id="par3Sel" aria-label="Third pane version"></select>
+  <select id="par4Sel" aria-label="Fourth pane version"></select>
+  <label title="Highlight words that differ from the main pane"><input type="checkbox" id="diffCb"> Diff</label>
   <span class="parallel-hint">Pane 1 uses the main version dropdown above.</span>
 </div>
 
@@ -218,10 +219,10 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <span id="ttsSpeedVal">1x</span>
   </label>
   <select id="ttsVoice" aria-label="Select TTS voice"></select>
-<label class="tts-label"><input type="checkbox" id="loopNT"> Repeat New Testament</label>
+  <label class="tts-label"><input type="checkbox" id="loopNT"> Repeat New Testament</label>
   <label class="tts-label"><input type="checkbox" id="loopOT"> Repeat Old Testament</label>
-  <label class="tts-label"><input type="checkbox" id="loopWhole"> Repeat Whole Bible</label>
   <label class="tts-label"><input type="checkbox" id="loopPaul"> Repeat Paul's Letters</label>
+  <label class="tts-label"><input type="checkbox" id="loopWhole"> Repeat Whole Bible</label>
   <span id="ttsStatus" class="tts-status"></span>
 </div>
 
@@ -268,11 +269,11 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 <div id="status">Select a chapter to load Bible text.</div>
 <div id="verses-container"></div>
 
+<script src="data/nestle1904.js"></script>
 <script src="data/sblgnt.js"></script>
 <script src="data/strongs.js"></script>
 <script src="data/lexicon.js"></script>
 <script src="data/interlinear.js"></script>
-<script src="data/kjvdict.js"></script>
 <script src="data/flite/flite.js"></script>
 <script>
 const NT_BOOKS = {
@@ -287,14 +288,6 @@ const NT_BOOKS = {
   "1 John": 5, "2 John": 1, "3 John": 1, "Jude": 1,
   "Revelation": 22
 };
-
-const PAUL_LETTERS_EN = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
-
-const PAUL_BOOKS = [
-  "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
-  "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians",
-  "1 Timothy", "2 Timothy", "Titus", "Philemon"
-];
 
 const OT_BOOKS = {
   "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36,
@@ -394,8 +387,8 @@ function getBookList() {
   if (v === 'LXX') return OT_BOOKS;
   if (v === 'Apocrypha') return APOC_BOOKS;
   if (v === 'WLCa' || v === 'WLC' || v === 'WLCC' || v === 'HAC') return OT_BOOKS;
-  if (v === 'DHNT') return NT_BOOKS;
-  if (v === 'TR' || v === 'NTGT') return NT_BOOKS;
+if (v === 'DHNT') return NT_BOOKS;
+  if (v === 'TR' || v === 'NTGT' || v === 'SBLGNT' || v === 'ElzevirTR' || v === 'WPNT' || v === 'Nestle1904') return NT_BOOKS;
   if (v === 'ain_ABT') { const m = {}; Object.assign(m, {'Psalms': 150}, NT_BOOKS); return m; }
   const all = {};
   Object.assign(all, OT_BOOKS, NT_BOOKS);
@@ -417,6 +410,12 @@ function bookNameForVersion(version, book) {
 }
 
 const ALL_VERSIONS = {
+  "Nestle1904": {
+    label: "Nestle 1904 GNT",
+    lang: "grc",
+    localVar: "_DATA_nestle1904",
+    file: "nestle1904.js"
+  },
   "SBLGNT": {
     label: "SBLGNT (2010)",
     lang: "grc",
@@ -907,6 +906,9 @@ const audioFileInput = $('audioFileInput');
 const bookmarkBtn = $('bookmarkBtn');
 const bookmarkSelect = $('bookmarkSelect');
 const deleteBookmarkBtn = $('deleteBookmarkBtn');
+const exportBookmarksBtn = $('exportBookmarksBtn');
+const importBookmarksBtn = $('importBookmarksBtn');
+const importBookmarksFile = $('importBookmarksFile');
 const autoScrollCb = $('autoScroll');
 autoScrollCb.onchange = () => { userScrolledAway = false; };
 const showStrongsCb = $('showStrongs');
@@ -915,6 +917,8 @@ const parallelCb = $('parallelCb');
 const parallelBar = $('parallelBar');
 const par2Sel = $('par2Sel');
 const par3Sel = $('par3Sel');
+const par4Sel = $('par4Sel');
+const diffCb = $('diffCb');
 const updateBtn = $('updateBtn');
 
 async function checkForAppImageUpdate() {
@@ -1180,7 +1184,9 @@ function saveLastState() {
     strongs: showStrongsCb.checked,
     parallel: parallelCb.checked,
     par2: parallelCb.checked ? par2Sel.value : null,
-    par3: parallelCb.checked ? par3Sel.value : null
+    par3: parallelCb.checked ? par3Sel.value : null,
+    par4: parallelCb.checked ? par4Sel.value : null,
+    diff: diffCb.checked
   }));
 }
 
@@ -1240,6 +1246,8 @@ bookmarkBtn.onclick = () => {
     book: currentBook,
     chapter: currentChapter,
     verseIndex: currentVerseIndex >= 0 ? currentVerseIndex : 0,
+    createdAt: new Date().toISOString(),
+    notes: null,
     audioTime: audio.src ? audio.currentTime : null
   };
   const list = getBookmarks();
@@ -1260,6 +1268,98 @@ deleteBookmarkBtn.onclick = () => {
   saveBookmarksList(list.filter(b => b.id !== id));
   renderBookmarkSelect();
   statusEl.textContent = 'Bookmark deleted.';
+};
+
+const BOOKMARK_SCHEMA_VERSION = 1;
+
+function exportableBookmark(bm) {
+  const cfg = VERSIONS[bm.version];
+  return {
+    id: bm.id,
+    label: bm.label,
+    version: bm.version,
+    versionLabel: cfg ? cfg.label : bm.version,
+    reference: `${bm.book} ${bm.chapter}:${(bm.verseIndex || 0) + 1}`,
+    book: bm.book,
+    chapter: bm.chapter,
+    verseIndex: bm.verseIndex,
+    audioTime: typeof bm.audioTime === 'number' ? bm.audioTime : null,
+    createdAt: bm.createdAt || null,
+    notes: typeof bm.notes === 'string' ? bm.notes : (bm.notes || null)
+  };
+}
+
+exportBookmarksBtn.onclick = () => {
+  const list = getBookmarks();
+  if (list.length === 0) { statusEl.textContent = 'No bookmarks to export.'; return; }
+  const payload = {
+    app: 'Holy-bible-A.S',
+    type: 'bookmarks',
+    schema: BOOKMARK_SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    bookmarks: list.map(exportableBookmark)
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `holy-bible-bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  statusEl.textContent = `Exported ${list.length} bookmark${list.length === 1 ? '' : 's'} as JSON.`;
+};
+
+function normalizeImportedBookmark(b) {
+  if (!b || typeof b !== 'object' || !b.book || !b.chapter) return null;
+  const chapter = Number(b.chapter);
+  const verseIndex = Number(b.verseIndex);
+  if (!Number.isFinite(chapter)) return null;
+  return {
+    id: typeof b.id === 'string' && b.id ? b.id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    label: typeof b.label === 'string' && b.label.trim() ? b.label.trim() : `${b.book} ${chapter}:${Number.isFinite(verseIndex) ? verseIndex + 1 : 1}`,
+    version: VERSIONS[b.version] ? b.version : versionSelect.value,
+    book: b.book,
+    chapter,
+    verseIndex: Number.isFinite(verseIndex) ? verseIndex : 0,
+    createdAt: typeof b.createdAt === 'string' ? b.createdAt : new Date().toISOString(),
+    notes: typeof b.notes === 'string' ? b.notes : null,
+    audioTime: typeof b.audioTime === 'number' ? b.audioTime : null
+  };
+}
+
+importBookmarksBtn.onclick = () => { importBookmarksFile.click(); };
+
+importBookmarksFile.onchange = () => {
+  const file = importBookmarksFile.files && importBookmarksFile.files[0];
+  importBookmarksFile.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try {
+      parsed = JSON.parse(String(reader.result));
+    } catch (e) {
+      statusEl.textContent = 'Import failed: not valid JSON.';
+      return;
+    }
+    let raw = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.bookmarks) ? parsed.bookmarks : null);
+    if (!raw) {
+      statusEl.textContent = 'Import failed: no bookmarks array in file.';
+      return;
+    }
+    const imported = raw.map(normalizeImportedBookmark).filter(Boolean);
+    if (imported.length === 0) { statusEl.textContent = 'Import failed: no valid bookmarks found.'; return; }
+    const existing = getBookmarks();
+    const byId = new Map(existing.map(b => [b.id, b]));
+    imported.forEach(b => byId.set(b.id, b));
+    saveBookmarksList(Array.from(byId.values()));
+    renderBookmarkSelect();
+    statusEl.textContent = `Imported ${imported.length} bookmark${imported.length === 1 ? '' : 's'}.`;
+  };
+  reader.onerror = () => { statusEl.textContent = 'Import failed: could not read file.'; };
+  reader.readAsText(file);
 };
 
 bookmarkSelect.onchange = () => {
@@ -1359,6 +1459,8 @@ function applyResumedState() {
   const initRtl = initLang === 'ar' || initLang === 'he' || initLang === 'aii';
   document.body.classList.toggle('rtl', initRtl);
   document.documentElement.lang = initRtl ? initLang : 'en';
+  showStrongsCb.disabled = !interlinearCapableVersion(versionSelect.value);
+  showStrongsCb.closest('label') && showStrongsCb.closest('label').classList.toggle('disabled', showStrongsCb.disabled);
 
   bookSelect.innerHTML = '';
   Object.keys(getBookList()).forEach(b => bookSelect.add(new Option(b, b)));
@@ -1384,6 +1486,8 @@ function applyResumedState() {
   }
   if (resumedState && resumedState.par2 && VERSIONS[resumedState.par2]) par2Sel.value = resumedState.par2;
   if (resumedState && resumedState.par3 && VERSIONS[resumedState.par3]) par3Sel.value = resumedState.par3;
+  if (resumedState && resumedState.par4 && VERSIONS[resumedState.par4]) par4Sel.value = resumedState.par4;
+  if (resumedState && typeof resumedState.diff === 'boolean') diffCb.checked = resumedState.diff;
   syncParallelUI();
   populateChapters();
   renderBookmarkSelect();
@@ -1396,6 +1500,8 @@ versionSelect.onchange = () => {
   const isRtl = lang === 'ar' || lang === 'he' || lang === 'aii';
   document.body.classList.toggle('rtl', isRtl);
   document.documentElement.lang = isRtl ? lang : 'en';
+  showStrongsCb.disabled = !interlinearCapableVersion(versionSelect.value);
+  showStrongsCb.closest('label') && showStrongsCb.closest('label').classList.toggle('disabled', showStrongsCb.disabled);
   const bl = getBookList();
   const prevBook = bookSelect.value;
   bookSelect.innerHTML = '';
@@ -1453,8 +1559,9 @@ async function loadChapter() {
   verses = data;
   if (parallelEnabled()) {
     parallelData = await Promise.all([
-      (async () => { try { return await fetchChapterForVersion(par2Sel.value, bookNameForVersion(par2Sel.value, currentBook), currentChapter); } catch (e) { return null; } })(),
-      (async () => { try { return await fetchChapterForVersion(par3Sel.value, bookNameForVersion(par3Sel.value, currentBook), currentChapter); } catch (e) { return null; } })()
+      (async () => { try { return par2Sel.value ? await fetchChapterForVersion(par2Sel.value, bookNameForVersion(par2Sel.value, currentBook), currentChapter) : null; } catch (e) { return null; } })(),
+      (async () => { try { return par3Sel.value ? await fetchChapterForVersion(par3Sel.value, bookNameForVersion(par3Sel.value, currentBook), currentChapter) : null; } catch (e) { return null; } })(),
+      (async () => { try { return par4Sel.value ? await fetchChapterForVersion(par4Sel.value, bookNameForVersion(par4Sel.value, currentBook), currentChapter) : null; } catch (e) { return null; } })()
     ]);
   } else {
     parallelData = null;
@@ -1484,32 +1591,18 @@ function lookupStrongs(word) {
   return Array.isArray(sn) ? sn.join('/') : sn;
 }
 
-// KJV and KJV-based translations use the archaic KJV dictionary rather
-// than Strong's numbers (KJV English words have no Greek/Hebrew alignment).
-const KJV_DICT_VERSIONS = ['KJV', 'AKJV', 'WEBSTER'];
-
-function isKjvDictVersion(version) {
-  return KJV_DICT_VERSIONS.includes(version || versionSelect.value);
+function interlinearCapableVersion(v) {
+  const cfg = VERSIONS[v];
+  return cfg && (cfg.lang === 'he' || cfg.lang === 'grc');
 }
 
-function lookupKjvDict(word) {
-  const data = window._DATA_kjvdict;
-  if (!data) return null;
-  const wordStr = String(word).trim();
-  
-  // Try direct lookup after removing trailing punctuation
-  let key = stripDiacritics(wordStr.replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
-  if (data[key]) return data[key];
-  
-  // Try after also removing KJV brackets [was] -> was
-  key = stripDiacritics(wordStr.replace(/^\[|\]$/g, '').replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
-  if (data[key]) return data[key];
-  
-  return null;
+function paneInterlinear(version) {
+  if (!showStrongsCb.checked) return false;
+  return interlinearCapableVersion(version || versionSelect.value);
 }
 
 function interlinearEnabled() {
-  return showStrongsCb.checked && 'Matthew' in getBookList();
+  return paneInterlinear(versionSelect.value);
 }
 
 function parallelEnabled() {
@@ -1524,15 +1617,18 @@ function syncParallelUI() {
 function populateParallelSelects() {
   par2Sel.innerHTML = '';
   par3Sel.innerHTML = '';
+  par4Sel.innerHTML = '';
   Object.keys(VERSIONS).forEach(v => {
     par2Sel.add(new Option(VERSIONS[v].label, v));
     par3Sel.add(new Option(VERSIONS[v].label, v));
+    par4Sel.add(new Option(VERSIONS[v].label, v));
   });
   const mainV = versionSelect.value;
   const prefs = ['NHEB', 'Arabic', 'NAV', 'SBLGNT', 'Byzantine', 'Orthodox'];
   const avails = prefs.filter(p => p !== mainV);
   par2Sel.value = avails[0] || '';
   par3Sel.value = avails[1] || '';
+  par4Sel.value = avails[2] || '';
 }
 
 parallelCb.onchange = () => {
@@ -1542,6 +1638,8 @@ parallelCb.onchange = () => {
 };
 par2Sel.onchange = () => { saveLastState(); loadChapter(); };
 par3Sel.onchange = () => { saveLastState(); loadChapter(); };
+par4Sel.onchange = () => { saveLastState(); loadChapter(); };
+diffCb.onchange = () => { renderVerses(); };
 
 function interlinearEntry(word, verseNum, wordIdx, version) {
   const data = window._DATA_interlinear;
@@ -1558,49 +1656,92 @@ function interlinearEntry(word, verseNum, wordIdx, version) {
   return Array.isArray(gloss) ? [gloss[0], gloss[1]] : [lookupStrongs(word), gloss];
 }
 
-function verseMarkup(v, i, primary, version) {
-  const showSn = showStrongsCb.checked;
-  const kjvMode = showSn && isKjvDictVersion(version);
-  const kjvData = kjvMode ? (window._DATA_kjvdict || null) : null;
+function verseMarkup(v, i, primary, version, diffFlags) {
+  const showSn = paneInterlinear(version);
+  const hebrew = interlinearCapableVersion(version || versionSelect.value) &&
+    VERSIONS[version || versionSelect.value].lang === 'he';
   let wordIdx = 0;
   const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
-    const il = showSn ? interlinearEntry(tok, i + 1, wordIdx, version) : null;
-    wordIdx++;
+    const idx = wordIdx++;
+    const wordAttr = ` data-word="${escHtml(tok)}"`;
+    if (hebrew && showSn) {
+      const nums = tok.match(/\d{1,4}/g) || [];
+      const script = tok.replace(/\d{1,4}/g, '');
+      const snStr = nums.length ? nums.map(n => 'H' + n).join('/') : null;
+      const snAttr = snStr ? ` data-sn="${escHtml(snStr)}"` : '';
+      let inner = escHtml(script);
+      if (snStr) {
+        inner += nums.map(n => `<span class="sn">${escHtml(n)}</span>`).join('');
+      }
+      return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}>${inner}</span>`;
+    }
+    const il = showSn ? interlinearEntry(tok, i + 1, idx, version) : null;
     const fullSn = il ? lookupStrongs(tok) : null;
     const sn = (il && il[0]) ? il[0] : fullSn;
-    const wordAttr = ` data-word="${escHtml(tok)}"`;
     const gAttr = (il && il[0]) ? ` data-g="${escHtml(il[0])}"` : '';
     const snAttr = sn ? ` data-sn="${escHtml(fullSn || sn)}"` : '';
-    // For KJV-family versions, tag words that have an archaic dictionary entry so
-    // clicking them opens the King James Dictionary instead of Strong's, and show their
-    // definition as an interlinear gloss when the Interlinear button is on.
-    const kjvDef = kjvData ? lookupKjvDict(tok) : null;
-    const kjvAttr = kjvDef ? ` data-kjv="1"` : '';
+    const diffAttr = diffFlags && diffFlags[idx] ? ' diff' : '';
     let inner = escHtml(tok);
     if (il && (il[0] || il[1])) {
       inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(tok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
     } else if (showSn && sn) {
       inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(tok)}`;
-    } else if (showSn && kjvDef) {
-      inner = `${escHtml(tok)}<span class="en kjv">${escHtml(kjvDef)}</span>`;
     }
-    return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}${gAttr}${kjvAttr}>${inner}</span>`;
+    return `<span class="w${diffAttr}" data-i="${ti}"${snAttr}${wordAttr}${gAttr}>${inner}</span>`;
   })()).join('');
   return `<div class="verse"${primary ? ` data-index="${i}"` : ''}>
     <span class="num">${i+1}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
   </div>`;
 }
 
+function tokenizeVerse(t) {
+  return t.split(/\s+/).filter(Boolean);
+}
+
+function normToken(t) {
+  return t.replace(/[\u2019\u02bc]/g, "'").toLowerCase().replace(/^[.,:;!?·“‘”()«»\-–—_*]+/, '').replace(/[.,:;!?·“‘”()«»\-–—_*]+$/, '');
+}
+
+function diffFlagsVerses(aText, bText) {
+  const a = tokenizeVerse(aText);
+  const b = tokenizeVerse(bText);
+  const n = a.length, m = b.length;
+  const eq = (x, y) => normToken(a[x]) === normToken(b[y]);
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = eq(i, j) ? 1 + dp[i + 1][j + 1] : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const flags = new Array(m).fill(false);
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (eq(i, j)) { i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { i++; }
+    else { flags[j] = true; j++; }
+  }
+  while (j < m) { flags[j] = true; j++; }
+  return flags;
+}
+
 function renderVerses() {
   if (parallelEnabled()) {
     const panes = [];
-    const paneVersions = [versionSelect.value, par2Sel.value, par3Sel.value];
-    const paneData = [verses, parallelData && parallelData[0], parallelData && parallelData[1]];
-    for (let p = 0; p < 3; p++) {
+    const selPairs = [[par2Sel, 0], [par3Sel, 1], [par4Sel, 2]]
+      .filter(([sel]) => sel.value)
+      .map(([sel, p]) => ({ p: p + 1, version: sel.value }));
+    const paneVersions = [versionSelect.value].concat(selPairs.map(s => s.version));
+    const paneData = [verses].concat(selPairs.map(s => parallelData && parallelData[s.p]));
+    for (let p = 0; p < paneVersions.length; p++) {
       const d = paneData[p];
-      const body = d && d.length
-        ? d.map((v, i) => verseMarkup(v, i, p === 0, paneVersions[p])).join('')
-        : `<div class="hint">This version has no verses for ${currentBook} ${currentChapter}.</div>`;
+      let body;
+      if (!d || !d.length) {
+        body = `<div class="hint">This version has no verses for ${currentBook} ${currentChapter}.</div>`;
+      } else if (p > 0 && diffCb.checked) {
+        body = d.map((v, i) => verseMarkup(v, i, false, paneVersions[p], diffFlagsVerses(paneData[0][i] || '', v))).join('');
+      } else {
+        body = d.map((v, i) => verseMarkup(v, i, p === 0, paneVersions[p])).join('');
+      }
       panes.push(`<div class="pane${p === 0 ? ' pane-primary' : ''}">
         <div class="pane-title">${escHtml(VERSIONS[paneVersions[p]] ? VERSIONS[paneVersions[p]].label : paneVersions[p])}</div>
         ${body}
@@ -2146,52 +2287,6 @@ dictOverlay.querySelectorAll('.dict-tab').forEach(tab => {
   });
 });
 
-// King James Dictionary popup: opened when clicking a KJV word that has an
-// archaic-word entry (used by KJV/AKJV/WEBSTER instead of Strong's numbers).
-const kjvOverlay = document.createElement('div');
-kjvOverlay.className = 'dict-overlay';
-kjvOverlay.innerHTML = `<div class="dict-box">
-  <div class="dict-head"><span class="dict-title">King James Dictionary</span>
-  <button class="dict-close" aria-label="Close dictionary" title="Close">&#10005;</button></div>
-  <div class="dict-body"></div>
-</div>`;
-document.body.appendChild(kjvOverlay);
-
-function kjvOverlayClose() {
-  kjvOverlay.classList.remove('open');
-}
-kjvOverlay.querySelector('.dict-close').onclick = kjvOverlayClose;
-kjvOverlay.addEventListener('click', (e) => { if (e.target === kjvOverlay) kjvOverlayClose(); });
-
-function openKjvDict(wordText, version) {
-  const data = window._DATA_kjvdict;
-  const body = kjvOverlay.querySelector('.dict-body');
-  const t = kjvOverlay.querySelector('.dict-title');
-  if (!data) {
-    t.textContent = 'King James Dictionary';
-    body.innerHTML = `<div class="dict-entry"><p class="dict-none">The King James Dictionary is not loaded.</p></div>`;
-    kjvOverlay.classList.add('open');
-    return;
-  }
-  const word = String(wordText).trim();
-  const def = lookupKjvDict(word);
-  t.textContent = 'King James Dictionary';
-  if (!def) {
-    body.innerHTML = `<div class="dict-entry">
-      <div class="dict-lemma">${escHtml(word)}</div>
-      <p class="dict-none">No King James Dictionary entry for "${escHtml(word)}".</p>
-      <p class="kjv-dict-kbd">This word keeps its modern meaning in the King James text.</p>
-    </div>`;
-  } else {
-    body.innerHTML = `<div class="dict-entry">
-      <div class="dict-lemma">${escHtml(word)}</div>
-      <p class="dict-def">${escHtml(def)}</p>
-      <p class="kjv-dict-kbd">King James Dictionary &middot; archaic KJV English</p>
-    </div>`;
-  }
-  kjvOverlay.classList.add('open');
-}
-
 function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
@@ -2237,7 +2332,7 @@ helpOverlay.innerHTML = `<div class="help-box">
     <div class="help-row"><span class="help-key">&larr; Arrow</span><span class="help-desc">Seek backward 3 seconds</span></div>
     <div class="help-row"><span class="help-key">&rarr; Arrow</span><span class="help-desc">Seek forward 3 seconds</span></div>
     <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Close dictionary popup</span></div>
-    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. In the KJV, AKJV, and Webster's versions, underlined words open the King James Dictionary of archaic English. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
+    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
   </div>
 </div>`;
 document.body.appendChild(helpOverlay);
@@ -2656,16 +2751,9 @@ dictSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') dict
 
 versesContainer.addEventListener('click', (e) => {
   if (timestampModeCb.checked) return;
-  const vEl = e.target.closest('.verse[data-index]');
-  // KJV-family versions with Interlinear on always use the King James Dictionary
-  // when a word is clicked - never Strong's.
-  const kjw = e.target.closest('.w[data-word]');
-  if (kjw && showStrongsCb.checked && isKjvDictVersion(versionSelect.value)) {
-    openKjvDict(kjw.getAttribute('data-word'), versionSelect.value);
-    return;
-  }
   const w = e.target.closest('.w[data-sn]');
   if (w) { openWordDict(w.getAttribute('data-sn'), w.getAttribute('data-word'), w.getAttribute('data-g')); return; }
+  const vEl = e.target.closest('.verse[data-index]');
   if (!vEl) return;
   const idx = parseInt(vEl.dataset.index, 10);
   if (isNaN(idx)) return;
@@ -2708,7 +2796,9 @@ function getFilteredVoices() {
   const voices = speechSynthesis.getVoices();
   const langFilter = VERSIONS[versionSelect.value].lang;
   const prefixes = langPrefixes(langFilter);
-  return offlineVoicePool(voices).filter(v => prefixes.some(p => v.lang.startsWith(p)));
+  return offlineVoicePool(voices)
+    .filter(v => !/female|f[1-4](?![a-z])/i.test(v.name))
+    .filter(v => prefixes.some(p => v.lang.startsWith(p)));
 }
 
 function loadVoices() {
@@ -2830,11 +2920,30 @@ function fliteSynthVerse(text, voice, cb) {
   }).catch((e) => cb(e));
 }
 
+let fliteWordList = null;
+
 function fliteSpeakVerse() {
   if (!ttsRunning) return;
   const text = verses[ttsIdx] || '';
   if (!text) { ttsIdx++; ttsSpeak(); return; }
-  fliteSynthVerse(text, 1, (err, res) => {
+  const tokens = text.split(/(\s+)/).filter(t => !t.match(/^\s+$/));
+  const verseEl = document.querySelector(`.verse[data-index="${ttsIdx}"]`);
+  const wordEls = verseEl ? verseEl.querySelectorAll('.w') : [];
+  fliteWordList = tokens.map((t, i) => ({
+    text: t,
+    els: wordEls.length === tokens.length ? [wordEls[i]] : []
+  }));
+  highlightVerse(ttsIdx);
+  ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (Flite)...`;
+  flitePlayWord(0);
+}
+
+function flitePlayWord(wi) {
+  if (!ttsRunning) return;
+  if (wi >= fliteWordList.length) { ttsIdx++; ttsSpeak(); return; }
+  const word = fliteWordList[wi];
+  if (!word.text) { flitePlayWord(wi + 1); return; }
+  fliteSynthVerse(word.text, 1, (err, res) => {
     if (!ttsRunning) return;
     if (err) {
       ttsStatusEl.textContent = 'Flite error: ' + err.message;
@@ -2844,19 +2953,28 @@ function fliteSpeakVerse() {
     let ctx;
     try { ctx = fliteAudioCtx(); } catch (e) { ttsStop(); return; }
     clearWordHighlights();
+    word.els.forEach(el => el.classList.add('wa'));
     const n = res.samples.length;
     const f32 = new Float32Array(n);
     for (let i = 0; i < n; i++) f32[i] = res.samples[i] / 32768;
     const buf = ctx.createBuffer(1, n, res.rate);
     buf.copyToChannel(f32, 0);
-    fliteNode = ctx.createBufferSource();
-    fliteNode.buffer = buf;
+    const node = ctx.createBufferSource();
+    node.buffer = buf;
     fliteGain.gain.value = parseFloat(volumeSlider.value) || 1;
-    fliteNode.connect(fliteGain);
-    highlightVerse(ttsIdx);
-    ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (Flite)...`;
-    fliteNode.onended = () => { if (ttsRunning) { ttsIdx++; ttsSpeak(); } };
-    fliteNode.start();
+    node.connect(fliteGain);
+    fliteNode = node;
+    node.onended = () => {
+      if (ttsRunning && fliteNode === node) flitePlayWord(wi + 1);
+    };
+    if (fliteNode === node) {
+      if (word.els.length && !userScrolledAway) {
+        programmaticScroll = true;
+        word.els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scheduleProgrammaticScrollEnd();
+      }
+      node.start();
+    }
   });
 }
 
@@ -2940,7 +3058,11 @@ function autoAdvanceChapter() {
   } else {
     const books = Object.keys(bookList);
     const idx = books.indexOf(currentBook);
-    if (idx < 0 || idx >= books.length - 1) {
+    const paul = paulLetterBooks(bookList);
+    if ($('loopPaul').checked && paul.length > 1 && currentBook === paul[paul.length - 1]) {
+      currentBook = paul[0];
+      currentChapter = 1;
+    } else if (idx < 0 || idx >= books.length - 1) {
       if ($('loopWhole').checked) {
         currentBook = books[0];
         currentChapter = 1;
@@ -2958,16 +3080,6 @@ function autoAdvanceChapter() {
         ttsStatusEl.textContent = 'End of Bible.';
         setTimeout(ttsStop, 1500);
         return;
-      }
-    } else if ($('loopPaul').checked) {
-      const lastPaul = lastPaulBook();
-      const firstPaul = firstPaulBook();
-      if (currentBook === lastPaul && firstPaul && bookList[firstPaul]) {
-        currentBook = firstPaul;
-        currentChapter = 1;
-      } else {
-        currentBook = books[idx + 1];
-        currentChapter = 1;
       }
     } else if ($('loopOT').checked) {
       const nextBook = books[idx + 1];
@@ -3006,20 +3118,18 @@ function firstNTBook() {
   return 'Matthew';
 }
 
-const PAUL_BOOK_ENGLISH = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
+const PAUL_LETTERS = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
 
-function firstPaulBook() {
-  const v = versionSelect.value;
-  if (v === 'LXX' || v === 'Apocrypha') return null;
-  if (v === 'Arabic') return AR_ENGLISH_TO_ARABIC['Romans'] || null;
-  return 'Romans';
-}
-
-function lastPaulBook() {
-  const v = versionSelect.value;
-  if (v === 'LXX' || v === 'Apocrypha') return null;
-  if (v === 'Arabic') return AR_ENGLISH_TO_ARABIC['Philemon'] || null;
-  return 'Philemon';
+function paulLetterBooks(bookList) {
+  const ntBase = firstNTBook();
+  if (!ntBase) return [];
+  const names = Object.keys(bookList);
+  const base = names.indexOf(ntBase);
+  if (base < 0) return [];
+  const ntOrder = Object.keys(NT_BOOKS);
+  return PAUL_LETTERS
+    .map(name => names[base + ntOrder.indexOf(name)])
+    .filter(Boolean);
 }
 
 function ttsSpeak() {
@@ -3082,7 +3192,6 @@ function ttsSpeak() {
 // Keyboard shortcuts for TTS and accessibility
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
-    if (kjvOverlay.classList.contains('open')) { e.preventDefault(); kjvOverlayClose(); return; }
     if (dictOverlay.classList.contains('open')) { e.preventDefault(); dictClose(); return; }
     if (helpOverlay.classList.contains('open')) { e.preventDefault(); helpOverlay.classList.remove('open'); return; }
   }
