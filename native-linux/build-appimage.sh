@@ -6,9 +6,9 @@ BUILD_DIR="${RUNNER_TEMP:-/tmp}/holy-bible-a-s-appimage"
 APP_DIR="$BUILD_DIR/AppDir"
 OUTPUT_DIR="$ROOT_DIR/build"
 LINUXDEPLOY="$BUILD_DIR/linuxdeploy-x86_64.AppImage"
-# Pin linuxdeploy by sha256 (continuous build as of 2026-08-23). Override with
+# Pin linuxdeploy by sha256 (continuous build as of 2026-09-01). Override with
 # LINUXDEPLOY_SHA256=<hash> when intentionally adopting a newer build.
-LINUXDEPLOY_SHA256="${LINUXDEPLOY_SHA256:-421ca71d5c69ea97c6309276232990d43df1dcece0edfaa26bbf926ff96ed12e}"
+LINUXDEPLOY_SHA256="${LINUXDEPLOY_SHA256:-36a2d7e274d12e1050d0e9ecfe11d339ed54720b2bec464c286d53f8b07f5c62}"
 ICON="$BUILD_DIR/holy-bible-a-s.svg"
 
 # WebKitGTK spawns its helper processes (WebKitNetworkProcess,
