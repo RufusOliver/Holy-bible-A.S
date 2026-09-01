@@ -104,7 +104,7 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .w .sn { display: block; font-size: 0.55em; color: #7a9a7a; line-height: 1; margin-bottom: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
 .w.wa .sn { color: #c8e6c9; }
 .w .en { display: block; font-size: 0.55em; color: #81c784; line-height: 1; margin-top: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
-.w .en.kjv { color: #ffc107; font-size: 0.6em; line-height: 1.15; margin-top: 2px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.w .en.kjv { color: #ffc107; font-size: 0.6em; line-height: 1.15; margin-top: 2px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: min(140px, 30vw); }
 .w.wa .en { color: #c8e6c9; }
 .timestamp-badge { float: right; font-size: 0.65rem; color: #3a5a3a; margin-left: 8px; font-family: monospace; }
 #status { padding: 4px 12px; font-size: 0.8rem; color: #6a8a6a; text-align: center; }
@@ -1495,12 +1495,17 @@ function isKjvDictVersion(version) {
 function lookupKjvDict(word) {
   const data = window._DATA_kjvdict;
   if (!data) return null;
-  const key = stripDiacritics(String(word).replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
+  const wordStr = String(word).trim();
+  
+  // Try direct lookup after removing trailing punctuation
+  let key = stripDiacritics(wordStr.replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
   if (data[key]) return data[key];
-  // Handle bracketed KJV additions, e.g. "[was]" -> "was"
-  const inner = String(word).replace(/^\[|\]$/g, '').replace(/[.,:;!?·-]+$/g, '');
-  const innerKey = stripDiacritics(inner).toLowerCase();
-  return data[innerKey] || null;
+  
+  // Try after also removing KJV brackets [was] -> was
+  key = stripDiacritics(wordStr.replace(/^\[|\]$/g, '').replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
+  if (data[key]) return data[key];
+  
+  return null;
 }
 
 function interlinearEnabled() {
@@ -2158,13 +2163,6 @@ function kjvOverlayClose() {
 kjvOverlay.querySelector('.dict-close').onclick = kjvOverlayClose;
 kjvOverlay.addEventListener('click', (e) => { if (e.target === kjvOverlay) kjvOverlayClose(); });
 
-function normKjvLookup(word) {
-  const data = window._DATA_kjvdict;
-  if (!data) return null;
-  let key = stripDiacritics(String(word).replace(/^\[|\]$/g, '').replace(/[.,:;!?·-]+$/g, '')).toLowerCase();
-  return data[key] || null;
-}
-
 function openKjvDict(wordText, version) {
   const data = window._DATA_kjvdict;
   const body = kjvOverlay.querySelector('.dict-body');
@@ -2176,7 +2174,7 @@ function openKjvDict(wordText, version) {
     return;
   }
   const word = String(wordText).trim();
-  const def = normKjvLookup(word) || lookupKjvDict(word);
+  const def = lookupKjvDict(word);
   t.textContent = 'King James Dictionary';
   if (!def) {
     body.innerHTML = `<div class="dict-entry">
@@ -2971,15 +2969,6 @@ function autoAdvanceChapter() {
         currentBook = books[idx + 1];
         currentChapter = 1;
       }
-    } else if ($('loopPaul').checked && currentBook === lastPaulLetter()) {
-      const romans = firstPaulLetter();
-      if (romans && bookList[romans]) {
-        currentBook = romans;
-        currentChapter = 1;
-      } else {
-        currentBook = books[idx + 1];
-        currentChapter = 1;
-      }
     } else if ($('loopOT').checked) {
       const nextBook = books[idx + 1];
       const firstNT = firstNTBook();
@@ -2988,15 +2977,6 @@ function autoAdvanceChapter() {
         currentChapter = 1;
       } else {
         currentBook = nextBook;
-        currentChapter = 1;
-      }
-    } else if ($('loopPaul').checked && currentBook === lastPaulBook()) {
-      const firstPaul = firstPaulBook();
-      if (firstPaul && bookList[firstPaul]) {
-        currentBook = firstPaul;
-        currentChapter = 1;
-      } else {
-        currentBook = books[idx + 1];
         currentChapter = 1;
       }
     } else {
