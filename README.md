@@ -87,6 +87,3 @@ The generated AppImage is written to [`build/`](build/).
 | Auto Version | Push to main | Bumps patch version in package.json |
 | Release | Tag push (`v*`) | Publishes AppImage to GitHub Releases |
 
-## License
-
-This project is licensed under the Reciprocal Public Domain Dedication. See [`LICENSE`](LICENSE).
