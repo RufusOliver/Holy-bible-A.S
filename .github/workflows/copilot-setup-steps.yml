@@ -35,3 +35,11 @@ jobs:
             console.log(`Script block ${index + 1}: OK`);
           }
           NODE
+
+      - name: Validate data files
+        run: |
+          for file in data/*.js; do
+            echo "Checking $file..."
+            node -e "new Function(require('fs').readFileSync('$file', 'utf8'))" || exit 1
+          done
+          echo "All data files OK"
