@@ -1,6 +1,8 @@
 # Holy Bible A.S - Agent Instructions
 
-This is the Holy Bible A.S project: a vanilla HTML/CSS/JavaScript Bible reader with native Linux GTK/WebKit AppImage packaging.
+> **Vibe-coded project.** The maintainer hates JavaScript and builds this app with AI. Most code is generated or heavily assisted by AI agents (Copilot, opencode, ChatGPT). Expect AI-written JS, iterative prompting, and human review for correctness. If you are an AI agent, you are the primary code author.
+
+This is the Holy Bible A.S project: a vanilla HTML/CSS/JavaScript Bible reader (single-file `index.html`) with native Linux GTK/WebKit AppImage packaging. It is maintained vibe-coded style: AI writes the JS, the human directs.
 
 ## Repository Shape
 - `index.html` - primary UI, CSS, JavaScript (single-file app)
