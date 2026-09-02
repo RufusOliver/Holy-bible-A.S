@@ -39,10 +39,12 @@ For native Linux changes: `./native-linux/build-appimage.sh` (requires GTK 3, We
 - `bible-app-maintainer` (primary) - maintain app, fix bugs, add features
 - `bible-pr-reviewer` (subagent) - review diffs for regressions, data integrity, accessibility
 - `pr-malware-checker` (subagent) - malware/supply-chain security review for PRs, workflows, dependencies
+- `copilot-cloud` (primary) - GitHub Copilot cloud agent for async issue-to-PR automation (`@copilot` assignment, ephemeral firewalled env, automated CodeQL scanning)
 
-Invoke with `@bible-app-maintainer`, `@bible-pr-reviewer`, `@pr-malware-checker` or via Tab cycling for primary agents.
+Invoke with `@bible-app-maintainer`, `@bible-pr-reviewer`, `@pr-malware-checker`, `@copilot-cloud` or via Tab cycling for primary agents. For cloud agent, assign issue to `@copilot` or comment `@copilot` on issue/PR.
 
 ## Workflows
 - `ai-agent.yml` - pull_request: AI review, auto-fix, PR summary
 - `ai-chat.yml` - issue_comment @ai: chat agent
+- `copilot-setup-steps.yml` - Copilot cloud agent environment setup (checkout, Node 22, npm ci, syntax checks)
 - `ci.yml`, `codeql.yml`, `build.yml` - CI, security, AppImage build
