@@ -1,6 +1,8 @@
 # Holy Bible A.S
 
-Holy Bible A.S is an accessible Bible reader with audio synchronization, more than 60 Bible translations, text-to-speech, interlinear Strong's data, 10 dictionaries, bookmarks, parallel translation reading, and dyslexia-friendly accessibility features.
+> **Vibe-coded.** I hate JS. This project is built with AI — most JavaScript is AI-generated and iterated with prompts. It works, but it's vibe-coded, not hand-crafted vanilla JS purism.
+
+Holy Bible A.S is an accessible Bible reader with audio synchronization, more than 60 Bible translations, text-to-speech, interlinear Strong's data, 10 dictionaries, bookmarks, parallel translation reading, and dyslexia-friendly accessibility features. Built single-file `index.html` + `data/*.js` and vibe-coded with AI assistance.
 
 ## Run in a browser
 
