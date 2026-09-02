@@ -3,8 +3,6 @@ name: AI Agent
 "on":
   pull_request:
     types: [opened, synchronize, reopened]
-  issue_comment:
-    types: [created]
 
 permissions:
   contents: write
@@ -298,85 +296,3 @@ jobs:
         env:
           HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
         run: echo "::notice::PR summary skipped. Add OPENAI_API_KEY secret to enable."
-
-  chat-agent:
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@ai')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-
-      - name: AI Chat Response
-        if: env.HAS_OPENAI_KEY == 'true'
-        env:
-          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          COMMENT: ${{ github.event.comment.body }}
-        run: |
-          node -e "
-            const https = require('https');
-
-            const comment = process.env.COMMENT.replace(/@ai\s*/i, '');
-
-            const prompt = \`You are an AI assistant for the Holy Bible A.S project - a Bible audio sync web app.
-            The user is asking in a GitHub issue/comment:
-
-            \${comment}
-
-            Context: The app has 60+ Bible translations, TTS, audio sync, Strong's/Thayer's/BDB/Vine's/Easton's/Smith's/Fausset's/Hitchcock's/JFB/Gill's dictionaries, interlinear mode, dyslexia features, parallel reading, bookmarks, and keyboard shortcuts.
-
-            Answer concisely and helpfully. If the question is about code, reference specific files (index.html, data/*.js). Use markdown.\`;
-
-            const body = JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [{ role: 'user', content: prompt }],
-              max_tokens: 800,
-              temperature: 0.5
-            });
-
-            const req = https.request({
-              hostname: 'api.openai.com',
-              path: '/v1/chat/completions',
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
-              }
-            }, (res) => {
-              let data = '';
-              res.on('data', chunk => data += chunk);
-              res.on('end', () => {
-                try {
-                  const result = JSON.parse(data);
-                  const answer = '🤖 **AI Agent**\\n\\n' + result.choices[0].message.content;
-                  require('fs').writeFileSync('response.md', answer);
-                } catch(e) {
-                  require('fs').writeFileSync('response.md', '');
-                }
-              });
-            });
-            req.on('error', () => require('fs').writeFileSync('response.md', ''));
-            req.write(body);
-            req.end();
-          "
-
-      - name: Post response
-        if: env.HAS_OPENAI_KEY == 'true' && success()
-        env:
-          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ -f response.md ] && [ -s response.md ]; then
-            RESPONSE=$(cat response.md)
-            curl -s -X POST \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-              -d "$(jq -n --arg body "$RESPONSE" '{body: $body}')"
-          fi
