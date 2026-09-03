@@ -1,14 +1,18 @@
 # WEB Audio - World English Bible
 
-Source: Basil Sands recording, dedicated to Public Domain.
-- Upstream: https://ebible.org/engwebu/mp3/ (ebible.org)
-- Mirror: https://www.audiotreasure.com/webindex.htm (David Williams) and https://publicdomainaudiobibles.com/WEBW.html (Winfred Hinson)
-- License: Public Domain (no restriction)
+Source: Basil Sands / David Williams / Winfred Hinson recordings, dedicated to Public Domain.
+- Upstream: https://ebible.org/engwebu/mp3/ (Genesis + NT only, 309 files: 02_GEN_01-50 + WEB-070-Matt to WEB-096-REV)
+- Full OT+NT via audiotreasure.com: https://www.audiotreasure.com/webindex.htm
+  - WEB_OT_Audio.zip (900MB) + WEB_NT_Audio.zip (300MB) = ~1.2GB
+  - Also: https://publicdomainaudiobibles.com/WEBW.html (WEBW_OT.zip 995MB + WEBW_NT.zip 320MB)
+- License: Public Domain
 
-This folder should contain chapter MP3s named as `book_chapter_web.mp3` (lowercase, e.g. `genesis_1_web.mp3`, `john_3_web.mp3`) to match existing `audio/kjv/*.mp3` and `audio/ylt/*.mp3` conventions used by `index.html` audio loader and `native-linux` packaging.
+This folder contains chapter MP3s named `book_chapter_web.mp3` (lowercase, e.g. `genesis_1_web.mp3`, `john_3_web.mp3`) matching `audio/kjv/*.mp3` and `audio/ylt/*.mp3` conventions for `index.html` loader.
 
-Use `download.sh` to fetch from ebible.org.
+Current: 5 samples (genesis 1-3, matthew 1, john 3) = ~20MB for validation. Full Bible = Genesis to Revelation (66 books, 1189 chapters).
 
-See `docs/github-copilot-agents-application-card.md` for responsible AI handling of external data.
+Use `./download.sh --sample` for 5 samples or `./download.sh --all` to fetch full zips from audiotreasure (requires ~1.2GB).
 
-Not yet committed: audio files are large (full WEB OT+NT ~1.2GB). Run the download script to populate.
+Note: ebible.org/mp3 only has Genesis + NT (309 files). For Exodus to Malachi (OT beyond Genesis), use audiotreasure zips.
+
+See `docs/github-copilot-agents-application-card.md` for responsible AI handling.
