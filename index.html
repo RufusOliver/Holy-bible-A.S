@@ -1648,7 +1648,10 @@ function lookupKjvDict(wordText) {
 function updateKjvDictUI() {
   const wrap = document.getElementById('kjvDictModeWrap');
   if (!wrap) return;
-  wrap.style.display = isKjvDictVersion(versionSelect.value) ? 'inline-flex' : 'none';
+  const sel = wrap.querySelector('select');
+  const on = isKjvDictVersion(versionSelect.value);
+  wrap.style.display = on ? 'inline-flex' : 'none';
+  if (sel) sel.disabled = !(on && showStrongsCb.checked);
 }
 
 function paneInterlinear(version) {
@@ -1733,11 +1736,12 @@ function verseMarkup(v, i, primary, version, diffFlags) {
     if (showSn && isKjvDictVersion(version || versionSelect.value)) {
       const entry = lookupKjvDict(tok);
       const diffAttr = diffFlags && diffFlags[idx] ? ' diff' : '';
-      let inner = escHtml(tok);
-      if (entry) {
-        const gloss = kjvDictModeSel.value === 'modern' ? (entry.modern || entry.def) : (entry.def || entry.modern);
-        if (gloss) inner = `${escHtml(tok)}<span class="en kjv">${escHtml(gloss)}</span>`;
+      if (!entry) {
+        return `<span class="w${diffAttr}" data-i="${ti}"${wordAttr}>${escHtml(tok)}</span>`;
       }
+      const gloss = kjvDictModeSel.value === 'modern' ? (entry.modern || entry.def) : (entry.def || entry.modern);
+      let inner = escHtml(tok);
+      if (gloss) inner = `${escHtml(tok)}<span class="en kjv">${escHtml(gloss)}</span>`;
       return `<span class="w${diffAttr}" data-i="${ti}" data-kjv="1"${wordAttr}>${inner}</span>`;
     }
     const il = showSn ? interlinearEntry(tok, i + 1, idx, version) : null;
@@ -2312,6 +2316,7 @@ timestampModeCb.onchange = () => {
 // Strong's numbers toggle
 showStrongsCb.onchange = () => {
   renderVerses();
+  updateKjvDictUI();
 };
 
 const kjvDictModeSel = document.getElementById('kjvDictMode');
@@ -2693,7 +2698,7 @@ async function dictSearch() {
     const qKey = normKjvLookup(q);
     const full = window._DATA_kjvdict || {};
     const modern = window._DATA_kjvdict_modern || {};
-    const qLower = q.toLowerCase();
+    const qLower = qKey || q.toLowerCase();
     const keys = Object.keys(full);
     const matches = keys.filter(k => k.includes(qLower) || String(full[k] || '').toLowerCase().includes(qLower)).slice(0, 30);
     const exact = qKey && full[qKey] && matches.indexOf(qKey) === -1 ? [qKey] : [];
