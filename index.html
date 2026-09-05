@@ -102,7 +102,10 @@ body.parallel .verse .w.diff { background: rgba(255, 235, 59, 0.2); border-botto
 .w .sn { display: block; font-size: 0.55em; color: #7a9a7a; line-height: 1; margin-bottom: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
 .w.wa .sn { color: #c8e6c9; }
 .w .en { display: block; font-size: 0.55em; color: #81c784; line-height: 1; margin-top: 1px; font-family: 'Segoe UI', sans-serif; text-align: center; }
+.w .en.kjv { color: #ffc107; font-style: italic; }
 .w.wa .en { color: #c8e6c9; }
+.w[data-kjv] { cursor: pointer; }
+.w[data-kjv]:hover { background: rgba(255, 193, 7, 0.18); }
 .timestamp-badge { float: right; font-size: 0.65rem; color: #3a5a3a; margin-left: 8px; font-family: monospace; }
 #status { padding: 4px 12px; font-size: 0.8rem; color: #6a8a6a; text-align: center; }
 .timestamp-mode #verses-container .verse { border: 1px dashed #2a4a2a; margin: 4px 0; }
@@ -172,6 +175,12 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
     <button id="loadBtn">Load Chapter</button>
     <label><input type="checkbox" id="autoScroll" checked> Auto-Scroll</label>
     <label><input type="checkbox" id="showStrongs"> Interlinear</label>
+    <label id="kjvDictModeWrap" title="Choose which King James Dictionary glosses appear under KJV-family words" style="display:none"> KJV dict:
+      <select id="kjvDictMode" aria-label="King James Dictionary gloss source">
+        <option value="modern">Modern word</option>
+        <option value="full">Full definition</option>
+      </select>
+    </label>
     <label><input type="checkbox" id="parallelCb"> Compare</label>
     <label><input type="checkbox" id="timestampMode"> Set Timestamps</label>
     <button id="resetTimestampsBtn">Reset Timestamps</button>
@@ -274,6 +283,8 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 <script src="data/strongs.js"></script>
 <script src="data/lexicon.js"></script>
 <script src="data/interlinear.js"></script>
+<script src="data/kjvdict.js"></script>
+<script src="data/kjvdict_modern.js"></script>
 <script src="data/flite/flite.js"></script>
 <script>
 const NT_BOOKS = {
@@ -1182,6 +1193,7 @@ function saveLastState() {
     chapter: currentChapter,
     verseIndex: currentVerseIndex,
     strongs: showStrongsCb.checked,
+    kjvDictMode: (typeof kjvDictModeSel !== 'undefined' && kjvDictModeSel) ? kjvDictModeSel.value : 'modern',
     parallel: parallelCb.checked,
     par2: parallelCb.checked ? par2Sel.value : null,
     par3: parallelCb.checked ? par3Sel.value : null,
@@ -1459,8 +1471,15 @@ function applyResumedState() {
   const initRtl = initLang === 'ar' || initLang === 'he' || initLang === 'aii';
   document.body.classList.toggle('rtl', initRtl);
   document.documentElement.lang = initRtl ? initLang : 'en';
-  showStrongsCb.disabled = !interlinearCapableVersion(versionSelect.value);
+  showStrongsCb.disabled = !interlinearAvailable(versionSelect.value);
   showStrongsCb.closest('label') && showStrongsCb.closest('label').classList.toggle('disabled', showStrongsCb.disabled);
+  updateKjvDictUI();
+  if (resumedState && typeof resumedState.kjvDictMode === 'string') {
+    const mw = document.getElementById('kjvDictModeWrap');
+    if (mw && [...mw.querySelector('select').options].some(o => o.value === resumedState.kjvDictMode)) {
+      mw.querySelector('select').value = resumedState.kjvDictMode;
+    }
+  }
 
   bookSelect.innerHTML = '';
   Object.keys(getBookList()).forEach(b => bookSelect.add(new Option(b, b)));
@@ -1500,8 +1519,9 @@ versionSelect.onchange = () => {
   const isRtl = lang === 'ar' || lang === 'he' || lang === 'aii';
   document.body.classList.toggle('rtl', isRtl);
   document.documentElement.lang = isRtl ? lang : 'en';
-  showStrongsCb.disabled = !interlinearCapableVersion(versionSelect.value);
+  showStrongsCb.disabled = !interlinearAvailable(versionSelect.value);
   showStrongsCb.closest('label') && showStrongsCb.closest('label').classList.toggle('disabled', showStrongsCb.disabled);
+  updateKjvDictUI();
   const bl = getBookList();
   const prevBook = bookSelect.value;
   bookSelect.innerHTML = '';
@@ -1596,9 +1616,44 @@ function interlinearCapableVersion(v) {
   return cfg && (cfg.lang === 'he' || cfg.lang === 'grc');
 }
 
+const KJV_DICT_VERSIONS = ['KJV', 'AKJV', 'WEBSTER'];
+function isKjvDictVersion(v) {
+  return KJV_DICT_VERSIONS.indexOf(v || versionSelect.value) !== -1;
+}
+
+function interlinearAvailable(v) {
+  return interlinearCapableVersion(v) || isKjvDictVersion(v);
+}
+
+function normKjvLookup(w) {
+  return stripDiacritics(String(w)
+    .replace(/[\[\]]/g, '')
+    .replace(/[.,:;!?·'"\u2018\u2019\u201C\u201D()«»*–—-]+$/g, '')
+    .replace(/^[^a-zA-Z]+/, '')
+    .toLowerCase());
+}
+
+function lookupKjvDict(wordText) {
+  const full = window._DATA_kjvdict;
+  const modern = window._DATA_kjvdict_modern;
+  if (!full && !modern) return null;
+  const key = normKjvLookup(wordText);
+  if (!key) return null;
+  const def = full && full[key] ? full[key] : '';
+  const gloss = modern && modern[key] ? modern[key] : '';
+  if (!def && !gloss) return null;
+  return { key: key, def: def, modern: gloss };
+}
+
+function updateKjvDictUI() {
+  const wrap = document.getElementById('kjvDictModeWrap');
+  if (!wrap) return;
+  wrap.style.display = isKjvDictVersion(versionSelect.value) ? 'inline-flex' : 'none';
+}
+
 function paneInterlinear(version) {
   if (!showStrongsCb.checked) return false;
-  return interlinearCapableVersion(version || versionSelect.value);
+  return interlinearAvailable(version || versionSelect.value);
 }
 
 function interlinearEnabled() {
@@ -1674,6 +1729,16 @@ function verseMarkup(v, i, primary, version, diffFlags) {
         inner += nums.map(n => `<span class="sn">${escHtml(n)}</span>`).join('');
       }
       return `<span class="w" data-i="${ti}"${snAttr}${wordAttr}>${inner}</span>`;
+    }
+    if (showSn && isKjvDictVersion(version || versionSelect.value)) {
+      const entry = lookupKjvDict(tok);
+      const diffAttr = diffFlags && diffFlags[idx] ? ' diff' : '';
+      let inner = escHtml(tok);
+      if (entry) {
+        const gloss = kjvDictModeSel.value === 'modern' ? (entry.modern || entry.def) : (entry.def || entry.modern);
+        if (gloss) inner = `${escHtml(tok)}<span class="en kjv">${escHtml(gloss)}</span>`;
+      }
+      return `<span class="w${diffAttr}" data-i="${ti}" data-kjv="1"${wordAttr}>${inner}</span>`;
     }
     const il = showSn ? interlinearEntry(tok, i + 1, idx, version) : null;
     const fullSn = il ? lookupStrongs(tok) : null;
@@ -2249,6 +2314,12 @@ showStrongsCb.onchange = () => {
   renderVerses();
 };
 
+const kjvDictModeSel = document.getElementById('kjvDictMode');
+kjvDictModeSel.onchange = () => {
+  renderVerses();
+  saveLastState();
+};
+
 // Click-a-word Strong's dictionary popup
 const dictOverlay = document.createElement('div');
 dictOverlay.className = 'dict-overlay';
@@ -2257,6 +2328,7 @@ dictOverlay.innerHTML = `<div class="dict-box">
   <button class="dict-close" aria-label="Close dictionary" title="Close">&#10005;</button></div>
   <div class="dict-tabs">
     <div class="dict-tab active" data-dict="strongs">Strong's</div>
+    <div class="dict-tab" data-dict="kjv">KJV</div>
     <div class="dict-tab" data-dict="thayers">Thayer's</div>
     <div class="dict-tab" data-dict="bdb">BDB</div>
     <div class="dict-tab" data-dict="vines">Vine's</div>
@@ -2280,8 +2352,12 @@ dictOverlay.querySelectorAll('.dict-tab').forEach(tab => {
     dictOverlay.querySelectorAll('.dict-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     activeDict = tab.dataset.dict;
-    const src = DICT_SOURCES[activeDict];
-    dictSearchInput.placeholder = src ? src.placeholder : (activeDict === 'strongs' || activeDict === 'thayers') ? 'Search G1 / H1 / word...' : 'Search word...';
+    if (activeDict === 'kjv') {
+      dictSearchInput.placeholder = 'Search KJV word...';
+    } else {
+      const src = DICT_SOURCES[activeDict];
+      dictSearchInput.placeholder = src ? src.placeholder : (activeDict === 'strongs' || activeDict === 'thayers') ? 'Search G1 / H1 / word...' : 'Search word...';
+    }
     const q = dictSearchInput.value.trim();
     if (q) dictSearch();
   });
@@ -2332,7 +2408,7 @@ helpOverlay.innerHTML = `<div class="help-box">
     <div class="help-row"><span class="help-key">&larr; Arrow</span><span class="help-desc">Seek backward 3 seconds</span></div>
     <div class="help-row"><span class="help-key">&rarr; Arrow</span><span class="help-desc">Seek forward 3 seconds</span></div>
     <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Close dictionary popup</span></div>
-    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
+    <p class="help-note">Click any word with a Strong's number (when enabled) to open the dictionary. Use the search bar to look up any G/H number or word across Strong's, Thayer's, BDB, Vine's, Easton's, Smith's, Fausset's, Hitchcock's, JFB, and Gill's dictionaries. In the KJV / AKJV / Webster translations, enabling Interlinear shows King James Dictionary glosses under archaic words (choose full definition or modern word from the KJV dict dropdown) and clicking a word opens its King James Dictionary entry. Click the Dy button for dyslexia-friendly reading mode with OpenDyslexic font, adjustable spacing, background colors, and a reading ruler guide.</p>
   </div>
 </div>`;
 document.body.appendChild(helpOverlay);
@@ -2468,6 +2544,28 @@ function renderDictEntry(num, e) {
   return html;
 }
 
+function openKjvDict(wordText) {
+  activeDict = 'kjv';
+  dictOverlay.querySelectorAll('.dict-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.dict === 'kjv');
+  });
+  dictSearchInput.placeholder = 'Search KJV word...';
+  const entry = lookupKjvDict(wordText || '');
+  const titleEl = dictOverlay.querySelector('.dict-title');
+  const body = dictOverlay.querySelector('.dict-body');
+  titleEl.textContent = 'King James Dictionary';
+  if (!entry) {
+    body.innerHTML = `<div class="dict-entry"><div class="dict-none">No King James Dictionary entry for "${escHtml(String(wordText || '').trim())}".</div></div>`;
+  } else {
+    body.innerHTML = `<div class="dict-entry">
+      <div class="dict-lemma">${escHtml(entry.key)}</div>
+      ${entry.modern && entry.modern !== entry.def ? `<p class="dict-topical"><span class="dict-kjv-label">Modern:</span> ${escHtml(entry.modern)}</p>` : ''}
+      <p class="dict-def">${escHtml(entry.def)}</p>
+    </div>`;
+  }
+  dictOverlay.classList.add('open');
+}
+
 async function openWordDict(snString, wordText, preferred) {
   activeDict = 'strongs';
   dictOverlay.querySelectorAll('.dict-tab').forEach(t => {
@@ -2581,6 +2679,33 @@ async function dictSearch() {
           if (v.d) html += `<p class="dict-def">${escHtml(v.d)}</p>`;
           if (v.k) html += `<p class="dict-kjv"><span class="dict-kjv-label">KJV:</span> ${escHtml(v.k)}</p>`;
         }
+        html += `</div>`;
+        return html;
+      }).join('');
+    }
+    dictOverlay.classList.add('open');
+    return;
+  }
+
+  if (activeDict === 'kjv') {
+    titleEl.textContent = 'King James Dictionary';
+    dictSearchInput.placeholder = 'Search KJV word...';
+    const qKey = normKjvLookup(q);
+    const full = window._DATA_kjvdict || {};
+    const modern = window._DATA_kjvdict_modern || {};
+    const qLower = q.toLowerCase();
+    const keys = Object.keys(full);
+    const matches = keys.filter(k => k.includes(qLower) || String(full[k] || '').toLowerCase().includes(qLower)).slice(0, 30);
+    const exact = qKey && full[qKey] && matches.indexOf(qKey) === -1 ? [qKey] : [];
+    if (!matches.length && !exact.length) {
+      body.innerHTML = `<div class="dict-entry"><p class="dict-none">No results for "${escHtml(q)}".</p></div>`;
+    } else {
+      body.innerHTML = (exact.concat(matches)).map(k => {
+        const def = full[k] || '';
+        const gloss = modern[k] || '';
+        let html = `<div class="dict-entry"><div class="dict-lemma">${escHtml(k)}</div>`;
+        if (gloss && gloss !== def) html += `<p class="dict-topical"><span class="dict-kjv-label">Modern:</span> ${escHtml(gloss)}</p>`;
+        if (def) html += `<p class="dict-def">${escHtml(def)}</p>`;
         html += `</div>`;
         return html;
       }).join('');
@@ -2751,6 +2876,8 @@ dictSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') dict
 
 versesContainer.addEventListener('click', (e) => {
   if (timestampModeCb.checked) return;
+  const kw = e.target.closest('.w[data-kjv]');
+  if (kw) { openKjvDict(kw.getAttribute('data-word')); return; }
   const w = e.target.closest('.w[data-sn]');
   if (w) { openWordDict(w.getAttribute('data-sn'), w.getAttribute('data-word'), w.getAttribute('data-g')); return; }
   const vEl = e.target.closest('.verse[data-index]');
