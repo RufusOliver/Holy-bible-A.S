@@ -1472,3 +1472,4 @@ window._DATA_kjvdict = {
   "yieldeth": "yields (archaic third person singular of 'yield')",
 
 };
+;
