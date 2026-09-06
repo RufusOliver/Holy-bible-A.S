@@ -1471,3 +1471,4 @@ window._DATA_kjvdict_modern = {
   "zeal": "eager",
   "zealous": "full"
 };
+;
