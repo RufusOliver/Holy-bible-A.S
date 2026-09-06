@@ -1932,8 +1932,8 @@ audioFileInput.onchange = (e) => {
   statusEl.textContent = `Loaded: ${file.name}`;
 };
 
-// Local audio loading for KJV, YLT, ASV (downloaded from LibriVox)
-const AUDIO_VERSIONS = ['KJV', 'YLT', 'ASV'];
+// Local audio loading for KJV, YLT, ASV, WEB
+const AUDIO_VERSIONS = ['KJV', 'YLT', 'ASV', 'WEB'];
 const AUDIO_BASE = 'audio';
 
 const LIBRIVOX_MAP = {
@@ -2175,7 +2175,6 @@ async function autoLoadAudio() {
   const chapter = currentChapter;
   if (!AUDIO_VERSIONS.includes(ver) || !book || !chapter) return;
   const libriMap = LIBRIVOX_MAP[ver];
-  if (!libriMap) return;
 
   if (ver === 'ASV') {
     try {
@@ -2194,39 +2193,31 @@ async function autoLoadAudio() {
     return;
   }
 
-  const identifier = libriMap[book];
-  if (!identifier) return;
-
-  const folder = ver.toLowerCase();
-  const localDir = `${AUDIO_BASE}/${folder}`;
+  // Local LibriVox copies are stored as <bookslug>_<chapter>_<ver>.mp3,
+  // e.g. matthew_1_kjv.mp3. KJV/YLT use spelled-out slugs; WEB uses the
+  // archive.org abbreviations (1cor, matt, prov, ...).
+  const LOCAL_SLUGS = {
+    KJV: { 'Psalms': 'psalm', 'Song of Solomon': 'song_of_solomon' },
+    WEB: { '1 Corinthians': '1cor', '1 Thessalonians': '1thessa', '2 Corinthians': '2cor', '2 Thessalonians': '2thessa', 'Galatians': 'gal', 'Matthew': 'matt', 'Proverbs': 'prov', 'Psalms': 'psalm', 'Song of Solomon': 'song_of_solomon' }
+  };
+  const fixes = LOCAL_SLUGS[ver] || {};
+  const slug = fixes[book] || book.toLowerCase().replace(/\s+/g, '_');
+  const localPath = `${AUDIO_BASE}/${ver.toLowerCase()}/${slug}_${chapter}_${ver.toLowerCase()}.mp3`;
 
   try {
-    const resp = await fetch(`${localDir}/`, { method: 'HEAD' });
-    if (!resp.ok) throw new Error('no local dir');
-    const res = await fetch(`https://archive.org/metadata/${identifier}/files`);
-    if (!res.ok) throw new Error('Archive.org fetch failed');
-    const data = await res.json();
-    const allFiles = (data.result || data.files || []).filter(f => f.name.endsWith('.mp3'));
-    allFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
-    const file = matchChapter(allFiles, chapter);
-    if (file) {
-      const localPath = `${localDir}/${file.name}`;
-      try {
-        const lr = await fetch(localPath, { method: 'HEAD' });
-        if (lr.ok) {
-          audio.src = localPath;
-          audio.load();
-          setVolume(volumeSlider.value);
-          statusEl.textContent = `Audio: ${book} ${chapter}`;
-          return;
-        }
-  } catch (e) {
-    console.warn('Failed to save storage:', e);
-    statusEl.textContent = 'Warning: could not save data to folder.';
-  }
+    const lr = await fetch(localPath, { method: 'HEAD' });
+    if (lr.ok) {
+      audio.src = localPath;
+      audio.load();
+      setVolume(volumeSlider.value);
+      statusEl.textContent = `Audio: ${book} ${chapter}`;
+      return;
     }
   } catch (e) {}
 
+  // Streaming fallback (LibriVox); versions without a remote copy stop here.
+  const identifier = libriMap && libriMap[book];
+  if (!identifier) return;
   try {
     const files = await fetchLibrivoxFiles(identifier);
     if (!files.length) return;
