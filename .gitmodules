@@ -1,0 +1,12 @@
+[submodule "vendor/ECC"]
+	path = vendor/ECC
+	url = https://github.com/affaan-m/ECC.git
+[submodule "vendor/everything-claude-code"]
+	path = vendor/everything-claude-code
+	url = https://github.com/WorldFlowAI/everything-claude-code.git
+[submodule "vendor/skills"]
+	path = vendor/skills
+	url = https://github.com/anthropics/skills.git
+[submodule "vendor/ponytail"]
+	path = vendor/ponytail
+	url = https://github.com/DietrichGebert/ponytail.git
