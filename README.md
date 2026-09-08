@@ -50,7 +50,7 @@ The generated AppImage is written to [`build/`](build/).
 ## Features
 
 - **60+ Bible translations** — English, Greek, Hebrew, Arabic, Aramaic
-- **Audio player** — Local MP3 files for KJV/YLT, Archive.org streaming for ASV and others
+- **Audio player** — Local MP3 files for KJV, YLT, ASV, WEB, ESV, NLT, and the Greek Ecumenical Patriarchal Text
 - **Verse sync** — Timestamp-based audio synchronization with verse highlighting
 - **TTS Audiobook** — Text-to-speech with word-level highlighting, voice selection, speed control, and auto-advance (OT/NT/Whole Bible loops)
 - **Parallel reading** — Compare up to 3 translations side by side
@@ -77,7 +77,7 @@ The generated AppImage is written to [`build/`](build/).
 | --- | --- |
 | [`index.html`](index.html) | Web application (HTML + CSS + JS in one file) |
 | [`data/`](data/) | Bible translations, dictionaries, and reference data |
-| [`audio/`](audio/) | Bundled Bible audio (KJV, YLT) |
+| [`audio/`](audio/) | Local Bible audio bundles; large MP3 assets are kept outside Git |
 | [`native-linux/`](native-linux/) | GTK/WebKit wrapper and AppImage build script |
 
 ## CI/CD

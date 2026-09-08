@@ -2239,6 +2239,21 @@ async function autoLoadAudio() {
 
   // FCBH local audio (ESV, NLT, Arabic, ElzevirTR)
   if (FCBH_AUDIO[ver]) {
+    const audioLabel = ver === 'ElzevirTR' ? 'Greek Ecumenical Patriarchal Text' : `${ver} Audio`;
+    const localSlug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const localDir = ver === 'ElzevirTR' ? 'greek-ecumenical-patriarchal-text' : ver.toLowerCase();
+    const localSuffix = ver === 'ElzevirTR' ? 'greek' : ver.toLowerCase();
+    const localPath = `${AUDIO_BASE}/${localDir}/${localSlug}_${chapter}_${localSuffix}.mp3`;
+    try {
+      const localResponse = await fetch(localPath, { method: 'HEAD' });
+      if (localResponse.ok) {
+        audio.src = localPath;
+        audio.load();
+        setVolume(volumeSlider.value);
+        statusEl.textContent = `${audioLabel}: ${book} ${chapter}`;
+        return;
+      }
+    } catch (e) {}
     try {
       const fc = fcbhConfFor(ver, book, chapter);
       if (fc) {
@@ -2248,7 +2263,7 @@ async function autoLoadAudio() {
           audio.src = path;
           audio.load();
           setVolume(volumeSlider.value);
-          statusEl.textContent = `Audio: ${book} ${chapter}`;
+          statusEl.textContent = `${audioLabel}: ${book} ${chapter}`;
           return;
         }
       }
@@ -2261,6 +2276,18 @@ async function autoLoadAudio() {
   const libriMap = LIBRIVOX_MAP[ver];
 
   if (ver === 'ASV') {
+    const localSlug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const localPath = `${AUDIO_BASE}/asv/${localSlug}_${chapter}_asv.mp3`;
+    try {
+      const localResponse = await fetch(localPath, { method: 'HEAD' });
+      if (localResponse.ok) {
+        audio.src = localPath;
+        audio.load();
+        setVolume(volumeSlider.value);
+        statusEl.textContent = `Audio: ${book} ${chapter}`;
+        return;
+      }
+    } catch (e) {}
     try {
       const files = await fetchLibrivoxFiles('englishAudioASV');
       const slug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
