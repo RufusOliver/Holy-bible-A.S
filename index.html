@@ -286,6 +286,7 @@ body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-b
 <script src="data/kjvdict.js"></script>
 <script src="data/kjvdict_modern.js"></script>
 <script src="data/flite/flite.js"></script>
+<script src="data/espeak-ng/espeakng.min.js"></script>
 <script>
 const NT_BOOKS = {
   "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21,
@@ -1932,9 +1933,70 @@ audioFileInput.onchange = (e) => {
   statusEl.textContent = `Loaded: ${file.name}`;
 };
 
-// Local audio loading for KJV, YLT, ASV, WEB
+// Local audio loading for KJV, YLT, ASV, WEB (LibriVox) and FCBH audio bibles
 const AUDIO_VERSIONS = ['KJV', 'YLT', 'ASV', 'WEB'];
 const AUDIO_BASE = 'audio';
+
+// FCBH audio modules: per-testament dir (relative to AUDIO_BASE), module code,
+// and name-field width. GRKEPT pairs with ElzevirTR (Byzantine-family Greek).
+const FCBH_AUDIO = {
+  ESV: {
+    NT: { dir: 'ENGESHN1DA/English_eng_ESV_NT_Non-Drama', module: 'ENGESHN1DA', width: 12 }
+  },
+  NLT: {
+    OT: { dir: 'ENGNLHO1DA/English_eng_NLH_OT_Non-Drama', module: 'ENGNLHO1DA', width: 12 },
+    NT: { dir: 'ENGNLHN1DA/ENGNLHN1DA', module: 'ENGNLHN1DA', width: 14 }
+  },
+  Arabic: {
+    OT: { dir: 'ARZVDVO1DA/Arabic_arb_VDV_OT_Non-Drama', module: 'ARZVDVO1DA', width: 12 },
+    NT: { dir: 'ARZVDVN1DA/Arabic_arb_VDV_NT_Non-Drama', module: 'ARZVDVN1DA', width: 12 }
+  },
+  ElzevirTR: {
+    NT: { dir: 'GRKEPTN1DA/Greek-Ancient_grc_EPT_NT_Non-Drama', module: 'GRKEPTN1DA', width: 12 }
+  }
+};
+
+// FCBH name tokens: English name minus spaces, with abbreviations as FCBH spells them.
+const FCBH_TOKEN_OVERRIDES = {
+  '1 Thessalonians': '1Thess',
+  '2 Thessalonians': '2Thess',
+  'Song of Solomon': 'SongofSongs'
+};
+function fcbhToken(book) {
+  if (FCBH_TOKEN_OVERRIDES[book]) return FCBH_TOKEN_OVERRIDES[book];
+  return book.replace(/ /g, '');
+}
+// FCBH filename: {A|B}{nn}_...{padded chapter}_{name}{pad}{module}.mp3
+function fcbhFileName(conf, letter, num, chapter, token) {
+  const chWidth = token === 'Psalms' ? 3 : 2;
+  const ch = String(chapter).padStart(chWidth, '0');
+  const code = letter + String(num).padStart(2, '0');
+  return `${AUDIO_BASE}/${conf.dir}/${code}${'_'.repeat(5 - chWidth)}${ch}_${token}${'_'.repeat(Math.max(0, conf.width - token.length))}${conf.module}.mp3`;
+}
+// Gives the per-testament FCBH config for a version, or null if none.
+function fcbhConfFor(version, book, chapter) {
+  const conf = FCBH_AUDIO[version];
+  if (!conf || !book || !chapter) return null;
+  let letter, num, token;
+  if (version === 'Arabic') {
+    const i = Object.keys(AR_BOOKS).indexOf(book);
+    if (i < 0) return null;
+    if (i < 39) { letter = 'A'; num = i + 1; token = fcbhToken(Object.keys(OT_BOOKS)[i]); return conf.OT && { conf: conf.OT, letter, num, token }; }
+    letter = 'B'; num = i - 39 + 1; token = fcbhToken(Object.keys(NT_BOOKS)[i - 39]);
+    return conf.NT && { conf: conf.NT, letter, num, token };
+  }
+  if (OT_BOOKS[book]) {
+    if (!conf.OT) return null;
+    letter = 'A'; num = Object.keys(OT_BOOKS).indexOf(book) + 1; token = fcbhToken(book);
+    return { conf: conf.OT, letter, num, token };
+  }
+  if (NT_BOOKS[book]) {
+    if (!conf.NT) return null;
+    letter = 'B'; num = Object.keys(NT_BOOKS).indexOf(book) + 1; token = fcbhToken(book);
+    return { conf: conf.NT, letter, num, token };
+  }
+  return null;
+}
 
 const LIBRIVOX_MAP = {
   KJV: {
@@ -2173,7 +2235,29 @@ async function autoLoadAudio() {
   const ver = versionSelect.value;
   const book = currentBook;
   const chapter = currentChapter;
-  if (!AUDIO_VERSIONS.includes(ver) || !book || !chapter) return;
+  if (!book || !chapter) return;
+
+  // FCBH local audio (ESV, NLT, Arabic, ElzevirTR)
+  if (FCBH_AUDIO[ver]) {
+    try {
+      const fc = fcbhConfFor(ver, book, chapter);
+      if (fc) {
+        const path = fcbhFileName(fc.conf, fc.letter, fc.num, chapter, fc.token);
+        const lr = await fetch(path, { method: 'HEAD' });
+        if (lr.ok) {
+          audio.src = path;
+          audio.load();
+          setVolume(volumeSlider.value);
+          statusEl.textContent = `Audio: ${book} ${chapter}`;
+          return;
+        }
+      }
+    } catch (e) {}
+    statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
+    return;
+  }
+
+  if (!AUDIO_VERSIONS.includes(ver)) return;
   const libriMap = LIBRIVOX_MAP[ver];
 
   if (ver === 'ASV') {
@@ -2908,75 +2992,71 @@ function langPrefixes(lang) {
 const LS_SAVED_VOICE = 'kgnt_ttsVoice';
 let voiceRetryTimer = null;
 
-function offlineVoicePool(voices) {
-  const onlineMarkers = /Google|Online|Network/i;
-  const local = voices.filter(v => v.localService === true && !onlineMarkers.test(v.name));
-  const noOnline = voices.filter(v => !onlineMarkers.test(v.name));
-  return (local.length ? local : noOnline).length ? (local.length ? local : noOnline) : voices;
+let systemVoices = [];
+let espeakVoices = [];
+let espeakModule = null;
+let espeakProm = null;
+
+function voiceLangMatch(v, prefixes) {
+  return !!v.lang && prefixes.some(p => v.lang.startsWith(p));
 }
 
-function getFilteredVoices() {
-  const voices = speechSynthesis.getVoices();
-  const langFilter = VERSIONS[versionSelect.value].lang;
-  const prefixes = langPrefixes(langFilter);
-  return offlineVoicePool(voices)
-    .filter(v => !/female|f[1-4](?![a-z])/i.test(v.name))
-    .filter(v => prefixes.some(p => v.lang.startsWith(p)));
+function restoreVoices(prefixes) {
+  const saved = safeGet(LS_SAVED_VOICE);
+  const opts = [...ttsVoiceSelect.options];
+  ttsVoiceSelect.value = '';
+  const pick = (val) => {
+    if (!val) return false;
+    if (opts.some(o => o.value === val)) { ttsVoiceSelect.value = val; return true; }
+    return false;
+  };
+  if (pick(saved) || (saved === 'flite' && pick('flite:0'))) return;
+  const firstMatch = opts.find(o => o.dataset.langMatch === '1');
+  if (firstMatch && pick(firstMatch.value)) return;
+  if (opts.length) pick(opts[0].value);
 }
 
 function loadVoices() {
   const langFilter = VERSIONS[versionSelect.value].lang;
-  const saved = safeGet(LS_SAVED_VOICE);
-  if (!('speechSynthesis' in window)) {
-    ttsVoiceSelect.innerHTML = '';
-    if (langFilter === 'en') ttsVoiceSelect.add(new Option('Flite (offline, no AI)', 'flite'));
-    ttsStatusEl.textContent = langFilter === 'en'
-      ? 'No system voices; select Flite for offline reading.'
-      : 'No text-to-speech voices available on this device.';
-    return;
-  }
-  const voices = speechSynthesis.getVoices();
+  const prefixes = langPrefixes(langFilter);
+  const hasSAPI = 'speechSynthesis' in window;
+  systemVoices = hasSAPI ? speechSynthesis.getVoices() : [];
   ttsVoiceSelect.innerHTML = '';
-  if (langFilter === 'en') ttsVoiceSelect.add(new Option('Flite (offline, no AI)', 'flite'));
-  if (!voices.length) {
-    clearTimeout(voiceRetryTimer);
-    voiceRetryTimer = setTimeout(loadVoices, 300);
-    return;
+  if (langFilter === 'en') {
+    ttsVoiceSelect.add(new Option('Flite (offline) Kal — 8 kHz', 'flite:0'));
+    ttsVoiceSelect.add(new Option('Flite (offline) Kal16 — 16 kHz', 'flite:1'));
   }
-  const pool = offlineVoicePool(voices);
-  const filtered = getFilteredVoices();
-  filtered.forEach((v, i) => {
-    const opt = new Option(`${v.name} (${v.lang})`, i);
-    if (v.lang.startsWith(langFilter)) opt.selected = true;
+  systemVoices.forEach((v, i) => {
+    const opt = new Option(`${v.name} (${v.lang})`, 'sys:' + i);
+    if (voiceLangMatch(v, prefixes)) opt.dataset.langMatch = '1';
     ttsVoiceSelect.appendChild(opt);
   });
-  if (saved === 'flite') {
-    ttsVoiceSelect.value = 'flite';
-  } else if (filtered.length) {
-    if (saved !== null && filtered[saved]) {
-      ttsVoiceSelect.value = saved;
-    } else {
-      ttsVoiceSelect.value = '0';
-    }
-  } else {
-    const any = pool.length ? pool[0] : null;
-    if (any) {
-      ttsVoiceSelect.add(new Option(`Auto (${any.name}, ${any.lang})`, ''));
-      ttsVoiceSelect.value = '';
-      ttsStatusEl.textContent = 'No matching voice for this language; using system default.';
-    }
+  restoreVoices(prefixes);
+  if (hasSAPI && !systemVoices.length) {
+    clearTimeout(voiceRetryTimer);
+    voiceRetryTimer = setTimeout(loadVoices, 300);
   }
+  espeakModuleLoad().then(() => {
+    if (document.querySelector('#ttsVoice option[value^="espeak:"]')) return;
+    espeakVoices.forEach(v => {
+      const langs = v.languages.map(l => l.name).join(', ');
+      const opt = new Option(`eSpeak ${v.name} (${langs})`, 'espeak:' + v.identifier);
+      if (v.languages.some(l => prefixes.some(p => l.name === p || l.name.startsWith(p)))) opt.dataset.langMatch = '1';
+      ttsVoiceSelect.appendChild(opt);
+    });
+    if (!ttsVoiceSelect.value) restoreVoices(prefixes);
+  }).catch(() => {});
 }
 if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
-ttsVoiceSelect.onchange = () => {
-  const v = Number(ttsVoiceSelect.value);
-  if (ttsVoiceSelect.value === 'flite') safeSet(LS_SAVED_VOICE, 'flite');
-  else if (Number.isInteger(v) && v >= 0) safeSet(LS_SAVED_VOICE, String(v));
-};
+ttsVoiceSelect.onchange = () => { safeSet(LS_SAVED_VOICE, ttsVoiceSelect.value); };
 
 function fliteSelected() {
-  return ttsVoiceSelect.value === 'flite';
+  return (ttsVoiceSelect.value || '').indexOf('flite:') === 0;
+}
+
+function espeakSelected() {
+  return (ttsVoiceSelect.value || '').indexOf('espeak:') === 0;
 }
 
 // Flite (festvox/flite) offline WASM synthesis via Web Audio.
@@ -3064,9 +3144,10 @@ function fliteSpeakVerse() {
 function flitePlayWord(wi) {
   if (!ttsRunning) return;
   if (wi >= fliteWordList.length) { ttsIdx++; ttsSpeak(); return; }
+  const fliteVoice = parseInt((ttsVoiceSelect.value || '').split(':')[1], 10) || 0;
   const word = fliteWordList[wi];
   if (!word.text) { flitePlayWord(wi + 1); return; }
-  fliteSynthVerse(word.text, 1, (err, res) => {
+  fliteSynthVerse(word.text, fliteVoice, (err, res) => {
     if (!ttsRunning) return;
     if (err) {
       ttsStatusEl.textContent = 'Flite error: ' + err.message;
@@ -3111,6 +3192,108 @@ function fliteSetVolume(v) {
 
 ttsSpeed.oninput = () => { ttsSpeedVal.textContent = ttsSpeed.value + 'x'; };
 
+// eSpeak-ng
+function espeakModuleLoad() {
+  if (espeakModule) return Promise.resolve(espeakModule);
+  if (!espeakProm) {
+    if (typeof eSpeakNG === 'undefined') return Promise.reject(new Error('eSpeak-ng engine not available.'));
+    espeakProm = new Promise((resolve, reject) => {
+      const t = new eSpeakNG('data/espeak-ng/espeakng.worker.js', () => {
+        t.list_voices((voices) => {
+          espeakVoices = voices;
+          espeakModule = t;
+          resolve(t);
+        });
+      });
+      setTimeout(() => {
+        if (!espeakModule) { espeakProm = null; reject(new Error('eSpeak-ng worker failed to start.')); }
+      }, 20000);
+    }).catch((e) => { espeakProm = null; throw e; });
+  }
+  return espeakProm;
+}
+
+function wordSpans(idx) {
+  const verseEl = document.querySelector(`.verse[data-index="${idx}"]`);
+  return verseEl ? [...verseEl.querySelectorAll('.w')] : [];
+}
+
+function espeakSpeakVerse() {
+  if (!ttsRunning) return;
+  const text = verses[ttsIdx] || '';
+  if (!text) { ttsIdx++; ttsSpeak(); return; }
+  const spans = wordSpans(ttsIdx);
+  highlightVerse(ttsIdx);
+  ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (eSpeak)...`;
+  espeakModuleLoad().then((t) => {
+    if (!ttsRunning) return;
+    t.set_rate(Math.min(450, Math.max(80, Math.round(175 * parseFloat(ttsSpeed.value)))));
+    t.set_pitch(50);
+    const voiceId = (ttsVoiceSelect.value || '').split(':')[1];
+    if (voiceId) t.set_voice(voiceId);
+    const chunks = [];
+    const events = [];
+    t.synthesize(text, (samples, evs) => {
+      if (samples) chunks.push(samples);
+      if (evs) events.push(...evs);
+      const done = evs && evs.some(e => e.type === 'list_terminated' || e.type === 'end');
+      if (done) espeakPlay(chunks, events, text, spans);
+    });
+  }).catch((e) => {
+    ttsStatusEl.textContent = 'eSpeak error: ' + (e && e.message ? e.message : e);
+    ttsStop();
+  });
+}
+
+function espeakPlay(chunks, events, text, spans) {
+  if (!ttsRunning) return;
+  const f32s = chunks.map(c => new Float32Array(c));
+  const frames = f32s.reduce((n, f) => n + f.length / 2, 0);
+  if (frames < 1) { ttsStatusEl.textContent = 'eSpeak produced no audio.'; ttsStop(); return; }
+  let ctx;
+  try { ctx = fliteAudioCtx(); } catch (e) { ttsStop(); return; }
+  clearWordHighlights();
+  const buf = ctx.createBuffer(2, frames, 22050);
+  const L = buf.getChannelData(0);
+  const R = buf.getChannelData(1);
+  let k = 0;
+  for (const f of f32s) {
+    for (let i = 0; i < f.length; i += 2) {
+      const s = Math.max(-1, Math.min(1, f[i]));
+      L[k] = s;
+      R[k] = s;
+      k++;
+    }
+  }
+  const node = ctx.createBufferSource();
+  node.buffer = buf;
+  fliteGain.gain.value = parseFloat(volumeSlider.value) || 1;
+  node.connect(fliteGain);
+  fliteNode = node;
+  const tokens = text.split(/(\s+)/);
+  const startDelayMs = 50;
+  events.forEach((ev) => {
+    if (ev.type !== 'word') return;
+    const wi = charIndexToWordIndex(ev.text_position, tokens);
+    const el = spans[wi];
+    if (!el) return;
+    setTimeout(() => {
+      if (!ttsRunning) return;
+      clearWordHighlights();
+      el.classList.add('wa');
+      if (!userScrolledAway) {
+        programmaticScroll = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        scheduleProgrammaticScrollEnd();
+      }
+    }, startDelayMs + Math.round((ev.audio_position || 0) / 22050 * 1000));
+  });
+  node.onended = () => {
+    if (ttsRunning && fliteNode === node) { ttsIdx++; ttsSpeak(); }
+  };
+  node.start(ctx.currentTime + startDelayMs / 1000);
+}
+
 ttsPlayBtn.onclick = () => {
   if (verses.length === 0) { ttsStatusEl.textContent = 'Load a chapter first.'; return; }
   if (ttsRunning) { ttsPause(); return; }
@@ -3126,7 +3309,7 @@ ttsPlayBtn.onclick = () => {
 ttsStopBtn.onclick = () => { ttsStop(); };
 
 function ttsPause() {
-  if (fliteSelected() && fliteCtx) {
+  if ((fliteSelected() || espeakSelected()) && fliteCtx) {
     if (fliteCtx.state === 'suspended') {
       fliteCtx.resume();
       ttsStatusEl.textContent = `Verse ${ttsIdx + 1}...`;
@@ -3262,6 +3445,7 @@ function ttsSpeak() {
     return;
   }
   if (fliteSelected()) { fliteSpeakVerse(); return; }
+  if (espeakSelected()) { espeakSpeakVerse(); return; }
   clearWordHighlights();
   const verseText = verses[ttsIdx];
   const tokens = verseText.split(/(\s+)/);
@@ -3270,11 +3454,10 @@ function ttsSpeak() {
   const wordEls = verseEl ? verseEl.querySelectorAll('.w') : [];
 
   const utter = new SpeechSynthesisUtterance(verseText);
-  const filteredVoices = getFilteredVoices();
-  const selIdx = parseInt(ttsVoiceSelect.value) || 0;
-  if (filteredVoices[selIdx]) {
-    utter.voice = filteredVoices[selIdx];
-    utter.lang = filteredVoices[selIdx].lang;
+  const selIdx = parseInt((ttsVoiceSelect.value || '').split(':')[1]) || 0;
+  if (systemVoices[selIdx]) {
+    utter.voice = systemVoices[selIdx];
+    utter.lang = systemVoices[selIdx].lang;
   }
   utter.rate = parseFloat(ttsSpeed.value);
   utter.volume = parseFloat(volumeSlider.value);
