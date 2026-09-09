@@ -23,5 +23,6 @@ This is a static web application with no server-side code. Security concerns are
 - Client-side code execution (XSS)
 - Data storage (localStorage, File System Access API)
 - External resource loading (Archive.org streaming, CDN fonts)
+- Git LFS audio downloads (media fetched from GitHub's LFS server at checkout; validate the hash published for each LFS object)
 
 The application does not collect, transmit, or store user data on any server.

@@ -14,6 +14,17 @@ python3 -m http.server 8000
 
 Then visit <http://localhost:8000>.
 
+## Bundled audio (Git LFS)
+
+Audio for ASV, ESV, Greek (Ecumenical Patriarchal), KJV, NLT, WEB, and YLT is stored as Git LFS objects. Install Git LFS and pull the audio once after cloning:
+
+```bash
+git lfs install
+git lfs pull
+```
+
+Without this, audio files exist only as LFS pointer placeholders and offline audio playback will not work. The AppImage and GitHub Pages build ship the real audio.
+
 ## Linux AppImage
 
 A prebuilt 64-bit Linux application is available from the [latest release](https://github.com/RufusOliver/Holy-bible-A.S/releases/latest). Download the `.AppImage` file, make it executable, and run it:
@@ -77,7 +88,7 @@ The generated AppImage is written to [`build/`](build/).
 | --- | --- |
 | [`index.html`](index.html) | Web application (HTML + CSS + JS in one file) |
 | [`data/`](data/) | Bible translations, dictionaries, and reference data |
-| [`audio/`](audio/) | Local Bible audio bundles; large MP3 assets are kept outside Git |
+| [`audio/`](audio/) | Bible audio for 7 editions (ASV, ESV, Greek, KJV, NLT, WEB, YLT), stored as Git LFS objects; run `git lfs pull` after cloning |
 | [`native-linux/`](native-linux/) | GTK/WebKit wrapper and AppImage build script |
 
 ## CI/CD
