@@ -395,12 +395,12 @@ const AR_BOOKS = {
 
 function getBookList() {
   const v = versionSelect.value;
-  if (v === 'Arabic') return AR_BOOKS;
+  if (v === 'SVD') return AR_BOOKS;
   if (v === 'LXX') return OT_BOOKS;
   if (v === 'Apocrypha') return APOC_BOOKS;
   if (v === 'WLCa' || v === 'WLC' || v === 'WLCC' || v === 'HAC') return OT_BOOKS;
 if (v === 'DHNT') return NT_BOOKS;
-  if (v === 'TR' || v === 'NTGT' || v === 'SBLGNT' || v === 'ElzevirTR' || v === 'WPNT' || v === 'Nestle1904') return NT_BOOKS;
+  if (v === 'TR' || v === 'NTGT' || v === 'SBLGNT' || v === 'EPT' || v === 'WPNT' || v === 'Nestle1904') return NT_BOOKS;
   if (v === 'ain_ABT') { const m = {}; Object.assign(m, {'Psalms': 150}, NT_BOOKS); return m; }
   const all = {};
   Object.assign(all, OT_BOOKS, NT_BOOKS);
@@ -417,7 +417,7 @@ const AR_ENGLISH_TO_ARABIC = (() => {
 })();
 
 function bookNameForVersion(version, book) {
-  if (version === 'Arabic') return AR_ENGLISH_TO_ARABIC[book] || book;
+  if (version === 'SVD') return AR_ENGLISH_TO_ARABIC[book] || book;
   return book;
 }
 
@@ -686,8 +686,8 @@ const ALL_VERSIONS = {
     localVar: "_DATA_nav",
     file: "nav.js"
   },
-  "ElzevirTR": {
-    label: "Elzevir Textus Receptus (1624)",
+  "EPT": {
+    label: "EPT — Elzevir Textus Receptus (1624)",
     lang: "grc",
     localVar: "_DATA_elzevirTR",
     file: "elzevirTR.js"
@@ -740,8 +740,8 @@ const ALL_VERSIONS = {
     localVar: "_DATA_MLV",
     file: "mlv.js"
   },
-  "Arabic": {
-    label: "Smith & Van Dyke Arabic (1865)",
+  "SVD": {
+    label: "SVD — Smith & Van Dyke Arabic (1865)",
     lang: "ar",
     localVar: "_DATA_arabic_svd",
     file: "_DATA_arabic_svd.js"
@@ -1683,7 +1683,7 @@ function populateParallelSelects() {
     par4Sel.add(new Option(VERSIONS[v].label, v));
   });
   const mainV = versionSelect.value;
-  const prefs = ['NHEB', 'Arabic', 'NAV', 'SBLGNT', 'Byzantine', 'Orthodox'];
+  const prefs = ['NHEB', 'SVD', 'NAV', 'SBLGNT', 'Byzantine', 'Orthodox'];
   const avails = prefs.filter(p => p !== mainV);
   par2Sel.value = avails[0] || '';
   par3Sel.value = avails[1] || '';
@@ -1947,11 +1947,11 @@ const FCBH_AUDIO = {
     OT: { dir: 'ENGNLHO1DA/English_eng_NLH_OT_Non-Drama', module: 'ENGNLHO1DA', width: 12 },
     NT: { dir: 'ENGNLHN1DA/ENGNLHN1DA', module: 'ENGNLHN1DA', width: 14 }
   },
-  Arabic: {
-    OT: { dir: 'ARZVDVO1DA/Arabic_arb_VDV_OT_Non-Drama', module: 'ARZVDVO1DA', width: 12 },
-    NT: { dir: 'ARZVDVN1DA/Arabic_arb_VDV_NT_Non-Drama', module: 'ARZVDVN1DA', width: 12 }
+SVD: {
+    OT: { dir: 'svd', module: 'ARZVDVO1DA', width: 12 },
+    NT: { dir: 'svd', module: 'ARZVDVO1DA', width: 12 }
   },
-  ElzevirTR: {
+  EPT: {
     NT: { dir: 'GRKEPTN1DA/Greek-Ancient_grc_EPT_NT_Non-Drama', module: 'GRKEPTN1DA', width: 12 }
   }
 };
@@ -1978,7 +1978,7 @@ function fcbhConfFor(version, book, chapter) {
   const conf = FCBH_AUDIO[version];
   if (!conf || !book || !chapter) return null;
   let letter, num, token;
-  if (version === 'Arabic') {
+  if (version === 'SVD') {
     const i = Object.keys(AR_BOOKS).indexOf(book);
     if (i < 0) return null;
     if (i < 39) { letter = 'A'; num = i + 1; token = fcbhToken(Object.keys(OT_BOOKS)[i]); return conf.OT && { conf: conf.OT, letter, num, token }; }
@@ -2239,10 +2239,10 @@ async function autoLoadAudio() {
 
   // FCBH local audio (ESV, NLT, Arabic, ElzevirTR)
   if (FCBH_AUDIO[ver]) {
-    const audioLabel = ver === 'ElzevirTR' ? 'Greek Ecumenical Patriarchal Text' : `${ver} Audio`;
+    const audioLabel = ver === 'EPT' ? 'Greek Ecumenical Patriarchal Text' : `${ver} Audio`;
     const localSlug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const localDir = ver === 'ElzevirTR' ? 'greek-ecumenical-patriarchal-text' : ver.toLowerCase();
-    const localSuffix = ver === 'ElzevirTR' ? 'greek' : ver.toLowerCase();
+    const localDir = ver === 'EPT' ? 'ept' : ver.toLowerCase();
+    const localSuffix = ver === 'EPT' ? 'ept' : ver.toLowerCase();
     const localPath = `${AUDIO_BASE}/${localDir}/${localSlug}_${chapter}_${localSuffix}.mp3`;
     try {
       const localResponse = await fetch(localPath, { method: 'HEAD' });
@@ -2268,6 +2268,17 @@ async function autoLoadAudio() {
         }
       }
     } catch (e) {}
+    // WordProject streams the Van Dyck Arabic (SVD) OT+NT per-chapter.
+    if (ver === 'SVD') {
+      const fc = fcbhConfFor(ver, book, chapter);
+      if (fc) {
+        audio.src = `https://www.wordproaudio.net/bibles/app/audio/16/${fc.num}/${chapter}.mp3`;
+        audio.load();
+        setVolume(volumeSlider.value);
+        statusEl.textContent = `${audioLabel}: ${book} ${chapter}`;
+        return;
+      }
+    }
     statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
     return;
   }
@@ -3447,7 +3458,7 @@ function autoAdvanceChapter() {
 function firstNTBook() {
   const v = versionSelect.value;
   if (v === 'LXX' || v === 'Apocrypha') return null;
-  if (v === 'Arabic') return Object.keys(AR_BOOKS)[39]; // Matthew in Arabic
+  if (v === 'SVD') return Object.keys(AR_BOOKS)[39]; // Matthew in Arabic
   return 'Matthew';
 }
 
