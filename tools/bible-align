@@ -4,11 +4,12 @@
 # Requires faster-whisper. Run from a venv:
 #   python -m venv /path/to/align; /path/to/align/bin/pip install faster-whisper
 #   /path/to/align/bin/python ./tools/bible-align Matthew 1 KJV
-# Writes <mp3>.json beside the source audio. APP must be adjusted to your clone.
-import json, re, sys, unicodedata, glob
+# Writes <mp3>.json beside the source audio. APP is derived from this
+# script's location (repo root), so it works from any clone.
+import json, os, re, sys, unicodedata, glob
 from faster_whisper import WhisperModel
 
-APP = "/home/jcross/Projects/Holy-bible-A.S"
+APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSIONS = {"KJV": "_DATA_kjv", "WEB": "_DATA_web", "YLT": "_DATA_ylt"}
 
 book, chapter, version = sys.argv[1], sys.argv[2], sys.argv[3]
