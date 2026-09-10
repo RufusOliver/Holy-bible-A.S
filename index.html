@@ -46,6 +46,7 @@ header h1 { color: #fff; font-size: 1.4rem; }
 .verse.active { background: linear-gradient(135deg, rgba(255,235,59,0.25), rgba(255,193,7,0.4)); border-left: 3px solid #ffc107; color: #fff; }
 .verse.active .num { color: #fff9c4; }
 .w { display: inline-block; transition: background 0.15s, color 0.15s; border-radius: 2px; padding: 0 1px; }
+.w.current-word { background: rgba(255, 235, 59, 0.55); color: #000; border-radius: 2px; }
 .w[data-sn] { cursor: pointer; }
 .w[data-sn]:hover { background: rgba(76, 175, 80, 0.18); }
 body.parallel .verse .w.diff { background: rgba(255, 235, 59, 0.2); border-bottom: 2px solid #ffc107; border-radius: 2px; }
@@ -1936,6 +1937,9 @@ audioFileInput.onchange = (e) => {
 // Local audio loading for KJV, YLT, ASV, WEB (LibriVox) and FCBH audio bibles
 const AUDIO_VERSIONS = ['KJV', 'YLT', 'ASV', 'WEB'];
 const AUDIO_BASE = 'audio';
+let wordTimes = [];
+let wordVerseOffsets = [];
+let currentWordEl = null;
 
 // FCBH audio modules: per-testament dir (relative to AUDIO_BASE), module code,
 // and name-field width. GRKEPT pairs with ElzevirTR (Byzantine-family Greek).
@@ -2231,6 +2235,47 @@ function matchChapter(files, chapter) {
   return null;
 }
 
+async function loadWordTimes(url) {
+  wordTimes = [];
+  wordVerseOffsets = [];
+  clearWordHighlight();
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const d = await r.json();
+    wordVerseOffsets = d.verse_offsets || [];
+    wordTimes = (d.words || []).map(w => ({ i: w.i, s: w.start, e: w.end }));
+  } catch (e) {}
+}
+
+function clearWordHighlight() {
+  if (currentWordEl) { currentWordEl.classList.remove('current-word'); currentWordEl = null; }
+}
+
+function updateWordHighlight() {
+  if (!wordTimes.length || !wordVerseOffsets.length) return;
+  const t = audio.currentTime;
+  let lo = 0, hi = wordTimes.length - 1, best = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (wordTimes[mid].s <= t) { best = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  if (best < 0) { clearWordHighlight(); return; }
+  const fi = wordTimes[best].i;
+  let v = wordVerseOffsets.length - 1;
+  for (let k = 0; k < wordVerseOffsets.length; k++) {
+    if (wordVerseOffsets[k] > fi) { v = k - 1; break; }
+  }
+  const wIdx = fi - wordVerseOffsets[v];
+  const vv = document.querySelector(`.verse[data-index="${v}"]`);
+  if (!vv) return;
+  const wspans = vv.querySelectorAll('.w');
+  const el = wspans[wIdx];
+  clearWordHighlight();
+  if (el) { el.classList.add('current-word'); currentWordEl = el; }
+}
+
 async function autoLoadAudio() {
   const ver = versionSelect.value;
   const book = currentBook;
@@ -2251,6 +2296,7 @@ async function autoLoadAudio() {
         audio.load();
         setVolume(volumeSlider.value);
         statusEl.textContent = `${audioLabel}: ${book} ${chapter}`;
+        loadWordTimes(localPath + '.json');
         return;
       }
     } catch (e) {}
@@ -2296,6 +2342,7 @@ async function autoLoadAudio() {
         audio.load();
         setVolume(volumeSlider.value);
         statusEl.textContent = `Audio: ${book} ${chapter}`;
+        loadWordTimes(localPath + '.json');
         return;
       }
     } catch (e) {}
@@ -2333,6 +2380,7 @@ async function autoLoadAudio() {
       audio.load();
       setVolume(volumeSlider.value);
       statusEl.textContent = `Audio: ${book} ${chapter}`;
+      loadWordTimes(localPath + '.json');
       return;
     }
   } catch (e) {}
@@ -2361,6 +2409,7 @@ audio.ontimeupdate = () => {
   seekBar.value = audio.currentTime / audio.duration;
   timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   updateSync();
+  updateWordHighlight();
 };
 
 audio.onended = () => { isPlaying = false; playBtn.textContent = '\u25B6'; cancelAnimationFrame(rafId); };
