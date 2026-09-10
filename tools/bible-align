@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+# Dev tool: generate word-level timestamps for a chapter's local audio.
+# Usage: ./bible-align <Book> <Chapter> <KJV|YLT|WEB>
+# Requires faster-whisper. Run from a venv:
+#   python -m venv /path/to/align; /path/to/align/bin/pip install faster-whisper
+#   /path/to/align/bin/python ./tools/bible-align Matthew 1 KJV
+# Writes <mp3>.json beside the source audio. APP must be adjusted to your clone.
+import json, re, sys, unicodedata, glob
+from faster_whisper import WhisperModel
+
+APP = "/home/jcross/Projects/Holy-bible-A.S"
+VERSIONS = {"KJV": "_DATA_kjv", "WEB": "_DATA_web", "YLT": "_DATA_ylt"}
+
+book, chapter, version = sys.argv[1], sys.argv[2], sys.argv[3]
+slug = re.sub(r"[^a-z0-9]", "", book.lower())
+audio_dir = f"{APP}/audio/{version.lower()}"
+cands = sorted(glob.glob(f"{audio_dir}/{slug}_*.mp3"))
+match = None
+for c in cands:
+    if c.endswith(f"_{chapter}_{version.lower()}.mp3"):
+        match = c
+if not match:
+    print(f"no audio for {book} {chapter} {version} in {audio_dir}"); sys.exit(1)
+mp3 = match
+out = mp3 + ".json"
+
+def load_text():
+    js = open(f"{APP}/data/{version.lower()}.js", encoding="utf8").read()
+    match = re.search(r"=\s*(\{.*\})\s*;", js, re.S)
+    data = json.loads(match.group(1))
+    ch = data[book][str(chapter)]
+    tokens = []
+    verse_offsets = []
+    for vn in sorted(ch, key=int):
+        verse_offsets.append(len(tokens))
+        for tok in ch[vn].split():
+            norm = re.sub(r"[^\w]", "", tok.lower(), flags=re.U)
+            if norm:
+                tokens.append(norm)
+    return tokens, verse_offsets
+
+def norm(w):
+    return unicodedata.normalize("NFKC", w.lower()).strip().strip(".,;:!?()[]\"'-")
+
+tokens, verse_offsets = load_text()
+tokens_lower = [norm(t) for t in tokens]
+
+model = WhisperModel("base", device="cpu", compute_type="int8")
+segments, info = model.transcribe(mp3, word_timestamps=True, language="en", beam_size=5, vad_filter=False)
+
+triples = []  # (start, end, norm_token)
+for seg in segments:
+    for w in seg.words:
+        n = norm(w.word)
+        if n:
+            triples.append((w.start, w.end, n))
+
+# greedy align via DP
+N, M = len(tokens_lower), len(triples)
+dp = [[0]*(M+1) for _ in range(N+1)]
+for i in range(N-1, -1, -1):
+    for j in range(M-1, -1, -1):
+        eq = 1 if triples[j][2] == tokens_lower[i] else 0
+        dp[i][j] = max(eq + dp[i+1][j+1], dp[i+1][j], dp[i][j+1])
+
+word_times = [None] * N
+i = j = 0
+while i < N and j < M:
+    eq = 1 if triples[j][2] == tokens_lower[i] else 0
+    if eq and dp[i][j] == eq + dp[i+1][j+1]:
+        word_times[i] = (round(triples[j][0], 2), round(triples[j][1], 2))
+        i += 1; j += 1
+    elif dp[i+1][j] >= (1 if j+1 < M else 0) + dp[i][j+1]:
+        i += 1
+    else:
+        j += 1
+
+aligned = []
+for i, t in enumerate(word_times):
+    if t:
+        aligned.append({"i": i, "word": tokens[i], "start": t[0], "end": t[1]})
+
+json.dump({"book": book, "chapter": int(chapter), "version": version, "n_words": len(tokens_lower), "matched": len(aligned), "verse_offsets": verse_offsets, "words": aligned}, open(out, "w"))
+print(f"text words: {len(tokens_lower)}, aligned: {len(aligned)}, -> {out}")
