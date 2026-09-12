@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' http://127.0.0.1:5000 ws://127.0.0.1:5000">
 <title>Holy Bible A.S</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='26' y='4' width='12' height='56' rx='2' fill='%23ffffff'/><rect x='12' y='16' width='40' height='12' rx='2' fill='%23ffffff'/></svg>">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/open-dyslexic-regular.min.css">
+<link rel="stylesheet" href="fonts/open-dyslexic.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a1f0a; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; overflow: auto; }
@@ -934,25 +935,8 @@ const par4Sel = $('par4Sel');
 const diffCb = $('diffCb');
 const updateBtn = $('updateBtn');
 
-async function checkForAppImageUpdate() {
-  const releaseUrl = 'https://api.github.com/repos/RufusOliver/Holy-bible-A.S/releases/latest';
-  try {
-    const response = await fetch(releaseUrl, { headers: { Accept: 'application/vnd.github+json' } });
-    if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
-    const release = await response.json();
-    const asset = (release.assets || []).find(item => item.name.endsWith('.AppImage'));
-    if (!asset) throw new Error('No Linux AppImage in the latest release');
-    updateBtn.hidden = false;
-    updateBtn.textContent = `\u2193 Update ${release.tag_name}`;
-    updateBtn.onclick = () => window.open(asset.browser_download_url, '_blank', 'noopener');
-    updateBtn.setAttribute('aria-label', `Download Linux AppImage ${release.tag_name}`);
-  } catch (error) {
-    updateBtn.hidden = true;
-    console.warn('AppImage update check unavailable:', error.message);
-  }
-}
+// No external network calls: offline-only. Update check removed.
 updateBtn.hidden = true;
-checkForAppImageUpdate();
 
 // --- Save state / bookmarks ---
 // Primary storage is a user-picked folder (File System Access API) holding a
@@ -2002,239 +1986,6 @@ function fcbhConfFor(version, book, chapter) {
   return null;
 }
 
-const LIBRIVOX_MAP = {
-  KJV: {
-    "Genesis": "bible_kjv_01_02_03_0908_librivox",
-    "Exodus": "bible_kjv_01_02_03_0908_librivox",
-    "Leviticus": "bible_kjv_01_02_03_0908_librivox",
-    "Numbers": "numbers_kjv_1108_librivox",
-    "Deuteronomy": "deuteronomy_kjv_1110_librivox",
-    "Joshua": "bible_kjv_joshua_jc_librivox",
-    "Judges": "bible_judges_kjv_jc_librivox",
-    "Ruth": "bible_ruth_tg_librivox",
-    "1 Samuel": "bible_1samuel_kjv_0903_librivox",
-    "2 Samuel": "bible_2samuel_kjv_jc_librivox",
-    "1 Kings": "bible_kjv_11_1king_0909_librivox",
-    "2 Kings": "bible_kjv_2kings_jc_librivox",
-    "1 Chronicles": "bible_kjv_14_2chronicles_1110_librivox",
-    "2 Chronicles": "2chronicleskjv_1403_librivox",
-    "Ezra": "ezra_kjv_sw_librivox",
-    "Nehemiah": "nehemiah_kjv_1110_librivox",
-    "Esther": "bible_kjv_17_esther_dr_1502_librivox",
-    "Job": "job_kjv_1012_librivox",
-    "Psalms": "psalms_kjv_1202_librivox",
-    "Proverbs": "proverbs_kjv_mp_librivox",
-    "Ecclesiastes": "ecclesiastes_kjv_1105_librivox",
-    "Song of Solomon": "songofsolomon_kjv_1009_librivox",
-    "Isaiah": "isaiah_kjv_1107_librivox",
-    "Jeremiah": "jeremiah_kjv_1201_librivox",
-    "Lamentations": "bible_kjv_25_lamentations_mp_0909_librivox",
-    "Ezekiel": "ezekiel_kjv_jr_librivox",
-    "Daniel": "daniel_kjv_1112_librivox",
-    "Hosea": "minor_prophets_tg_librivox",
-    "Joel": "minor_prophets_tg_librivox",
-    "Amos": "minor_prophets_tg_librivox",
-    "Obadiah": "minor_prophets_tg_librivox",
-    "Jonah": "minor_prophets_tg_librivox",
-    "Micah": "minor_prophets_tg_librivox",
-    "Nahum": "minor_prophets_tg_librivox",
-    "Habakkuk": "minor_prophets_tg_librivox",
-    "Zephaniah": "minor_prophets_tg_librivox",
-    "Haggai": "minor_prophets_tg_librivox",
-    "Zechariah": "minor_prophets_tg_librivox",
-    "Malachi": "minor_prophets_tg_librivox",
-    "Matthew": "matthew_kjv_mp_librivox",
-    "Mark": "mark_kjv_sw_librivox",
-    "Luke": "bible_kjv_nt_03_luke_0812_librivox",
-    "John": "biblent04_john_kjv_librivox",
-    "Acts": "acts_kjv_1112_librivox",
-    "Romans": "romans_kjv_1103_librivox",
-    "1 Corinthians": "1corinthians_kjv_1103_librivox",
-    "2 Corinthians": "2corinthians_kjv_1105_librivox",
-    "Galatians": "bible_4epistles_kjv_1104_librivox",
-    "Ephesians": "bible_4epistles_kjv_1104_librivox",
-    "Philippians": "bible_4epistles_kjv_1104_librivox",
-    "Colossians": "bible_4epistles_kjv_1104_librivox",
-    "1 Thessalonians": "bible_1thessalonians_kjv_1010_librivox",
-    "2 Thessalonians": "bible_2thessalonians_kjv_1011_librivox",
-    "1 Timothy": "bible_1timothy_kjv_1007_librivox",
-    "2 Timothy": "bible_2timothy_kjv_1009_librivox",
-    "Titus": "bible_titus_kjv_1007_librivox",
-    "Philemon": "bible_philemon_kjv_1007_librivox",
-    "Hebrews": "hebrews_kjv_1111_librivox",
-    "1 Peter": "epistlesofpeter_kjv_1109_librivox",
-    "2 Peter": "epistlesofpeter_kjv_1109_librivox",
-    "1 John": "bible_epistlesjohn_rt_librivox",
-    "2 John": "bible_epistlesjohn_rt_librivox",
-    "3 John": "bible_epistlesjohn_rt_librivox",
-    "Jude": "bible_epistlesjohn_rt_librivox",
-    "Revelation": "revelation_mp_librivox",
-  },
-  YLT: {
-    "Genesis": "bible_ylt_01_genesis_mp_0903_librivox",
-    "Exodus": "bible_ylt_02_exodus_mp_0909_librivox",
-    "Leviticus": "bible_ylt_03_leviticus_mp_0910_librivox",
-    "Numbers": "numbers_mp_librivox",
-    "Joshua": "bible_ylt_joshua_1004_librivox",
-    "Judges": "bible_judges_ylt_1009-librivox",
-    "Ruth": "ruth_ylt_mp_librivox",
-    "1 Samuel": "bible_ylt_09_1_samuel_1705_librivox",
-    "2 Samuel": "ylt2samuel_1712_librivox",
-    "2 Kings": "bible_2kings_1806_librivox",
-    "1 Chronicles": "bible_ylt_13_1chronicals_1104_librivox",
-    "2 Chronicles": "2chronylt_mp_librivox",
-    "Ezra": "bible_ylt_ezra_mp_librivox",
-    "Nehemiah": "bible_ylt_nehemiah_1106",
-    "Esther": "book_of_esther_ylt_mp_1506_librivox",
-    "Job": "bible_ylt_job_0902_librivox",
-    "Psalms": "psalms_ylt_mp_librivox",
-    "Proverbs": "bible_proverbs_ylt_1010_librivox",
-    "Ecclesiastes": "ecclesiastes_ylt_mp_librivox",
-    "Song of Solomon": "songofsolomon_ylt_1509_librivox",
-    "Isaiah": "book_of_isaiah_ylt_mp_librivox",
-    "Jeremiah": "bible_ylt_24_mp_librivox",
-    "Lamentations": "book_of_lamentations_ylt_mp_librivox",
-    "Ezekiel": "ylt_ezekiel_0808_librivox",
-    "Daniel": "book_of_daniel_ylt_mp",
-    "Hosea": "book_of_hosea_ylt_mp_librivox",
-    "Joel": "book_of_joel_ylt_mp_librivox",
-    "Amos": "book_of_amos_ylt_mp_librivox",
-    "Obadiah": "books_of_obadiah_jonah_micah_ylt_mp_librivox",
-    "Jonah": "books_of_obadiah_jonah_micah_ylt_mp_librivox",
-    "Micah": "books_of_obadiah_jonah_micah_ylt_mp_librivox",
-    "Nahum": "bible_ylt_34-37_mp_librivox",
-    "Habakkuk": "bible_ylt_34-37_mp_librivox",
-    "Zephaniah": "bible_ylt_34-37_mp_librivox",
-    "Haggai": "bible_ylt_34-37_mp_librivox",
-    "Zechariah": "zechariah_and_malachi_ylt_mp_librivox",
-    "Malachi": "zechariah_and_malachi_ylt_mp_librivox",
-    "Matthew": "ylt_matthew_2103_librivox",
-    "Mark": "mark_ylt_1912_librivox",
-    "Luke": "luke_ylt_2104_librivox",
-    "John": "john_ylt_2011_librivox",
-    "Acts": "bible_ylt_nt_05_acts_2003_librivox",
-    "Romans": "bible_ylt_nt_06_romans_2004_librivox",
-    "1 Corinthians": "1corinthians_ylt_2111_librivox",
-    "2 Corinthians": "2ndcorinthiansylt_2201_librivox",
-    "Galatians": "bible_ylt_nt_09_galatians_1912_librivox",
-    "Ephesians": "ephesians_ylt_2001_librivox",
-    "Philippians": "philippians_ylt_2110_librivox",
-    "Colossians": "colossiansylt_2112_librivox",
-    "1 Thessalonians": "bible_1_2_thessalonians_ylt_2102_librivox",
-    "2 Thessalonians": "bible_1_2_thessalonians_ylt_2102_librivox",
-    "1 Timothy": "timothy_ylt_2103_librivox",
-    "2 Timothy": "timothy_ylt_2103_librivox",
-    "Titus": "bible_ylt_nt17_titus_2001_librivox",
-    "Philemon": "philemon_ylt_2109_librivox",
-    "Hebrews": "hebrews_ylt_1912_librivox",
-    "James": "james_ylt_2006_librivox",
-    "1 Peter": "epistlesofpeter_ylt_2012_librivox",
-    "2 Peter": "epistlesofpeter_ylt_2012_librivox",
-    "1 John": "epistlesofjohn_ylt_2004_librivox",
-    "2 John": "epistlesofjohn_ylt_2004_librivox",
-    "3 John": "epistlesofjohn_ylt_2004_librivox",
-    "Jude": "bible_ylt_nt26_jude_1912_librivox",
-    "Revelation": "revelation_ylt_2110_librivox",
-  },
-  ASV: {
-    "Genesis": "bible_001_asv.mp3",
-    "Exodus": "bible_002_asv.mp3",
-    "Leviticus": "bible_003_asv.mp3",
-    "Numbers": "bible_004_asv.mp3",
-    "Deuteronomy": "bible_005_asv.mp3",
-    "Joshua": "bible_006_asv.mp3",
-    "Judges": "bible_007_asv.mp3",
-    "Ruth": "bible_008_asv.mp3",
-    "1 Samuel": "bible_009_asv.mp3",
-    "2 Samuel": "bible_010_asv.mp3",
-    "1 Kings": "bible_011_asv.mp3",
-    "2 Kings": "bible_012_asv.mp3",
-    "1 Chronicles": "bible_013_asv.mp3",
-    "2 Chronicles": "bible_014_asv.mp3",
-    "Ezra": "bible_015_asv.mp3",
-    "Nehemiah": "bible_016_asv.mp3",
-    "Esther": "bible_017_asv.mp3",
-    "Job": "bible_018_asv.mp3",
-    "Psalms": "bible_019_asv.mp3",
-    "Proverbs": "bible_020_asv.mp3",
-    "Ecclesiastes": "bible_021_asv.mp3",
-    "Song of Solomon": "bible_022_asv.mp3",
-    "Isaiah": "bible_023_asv.mp3",
-    "Jeremiah": "bible_024_asv.mp3",
-    "Lamentations": "bible_025_asv.mp3",
-    "Ezekiel": "bible_026_asv.mp3",
-    "Daniel": "bible_027_asv.mp3",
-    "Hosea": "bible_028_asv.mp3",
-    "Joel": "bible_029_asv.mp3",
-    "Amos": "bible_030_asv.mp3",
-    "Obadiah": "bible_031_asv.mp3",
-    "Jonah": "bible_032_asv.mp3",
-    "Micah": "bible_033_asv.mp3",
-    "Nahum": "bible_034_asv.mp3",
-    "Habakkuk": "bible_035_asv.mp3",
-    "Zephaniah": "bible_036_asv.mp3",
-    "Haggai": "bible_037_asv.mp3",
-    "Zechariah": "bible_038_asv.mp3",
-    "Malachi": "bible_039_asv.mp3",
-    "Matthew": "bible_040_asv.mp3",
-    "Mark": "bible_041_asv.mp3",
-    "Luke": "bible_042_asv.mp3",
-    "John": "bible_043_asv.mp3",
-    "Acts": "bible_044_asv.mp3",
-    "Romans": "bible_045_asv.mp3",
-    "1 Corinthians": "bible_046_asv.mp3",
-    "2 Corinthians": "bible_047_asv.mp3",
-    "Galatians": "bible_048_asv.mp3",
-    "Ephesians": "bible_049_asv.mp3",
-    "Philippians": "bible_050_asv.mp3",
-    "Colossians": "bible_051_asv.mp3",
-    "1 Thessalonians": "bible_052_asv.mp3",
-    "2 Thessalonians": "bible_053_asv.mp3",
-    "1 Timothy": "bible_054_asv.mp3",
-    "2 Timothy": "bible_055_asv.mp3",
-    "Titus": "bible_056_asv.mp3",
-    "Philemon": "bible_057_asv.mp3",
-    "Hebrews": "bible_058_asv.mp3",
-    "James": "bible_059_asv.mp3",
-    "1 Peter": "bible_060_asv.mp3",
-    "2 Peter": "bible_061_asv.mp3",
-    "1 John": "bible_062_asv.mp3",
-    "2 John": "bible_063_asv.mp3",
-    "3 John": "bible_064_asv.mp3",
-    "Jude": "bible_065_asv.mp3",
-    "Revelation": "bible_066_asv.mp3",
-  }
-};
-
-const librivoxCache = {};
-
-async function fetchLibrivoxFiles(identifier) {
-  if (librivoxCache[identifier]) return librivoxCache[identifier];
-  const res = await fetch(`https://archive.org/metadata/${identifier}/files`);
-  if (!res.ok) throw new Error(`Archive.org returned ${res.status}`);
-  const data = await res.json();
-  const mp3s = (data.result || data.files || []).filter(f => f.name.endsWith('.mp3'));
-  mp3s.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
-  librivoxCache[identifier] = mp3s;
-  return mp3s;
-}
-
-function matchChapter(files, chapter) {
-  const ch = String(chapter);
-  const patterns = [
-    new RegExp(`(?:chapter|ch|_ch_|_ch)\\s*${ch}\\b`, 'i'),
-    new RegExp(`\\b${ch}\\.`),
-    new RegExp(`\\b${ch}_`),
-    new RegExp(`\\b0*${ch}\\b`)
-  ];
-  for (const pat of patterns) {
-    const m = files.find(f => pat.test(f.name));
-    if (m) return m;
-  }
-  if (files.length >= chapter) return files[chapter - 1];
-  return null;
-}
-
 async function loadWordTimes(url) {
   wordTimes = [];
   wordVerseOffsets = [];
@@ -2314,23 +2065,12 @@ async function autoLoadAudio() {
         }
       }
     } catch (e) {}
-    // WordProject streams the Van Dyck Arabic (SVD) OT+NT per-chapter.
-    if (ver === 'SVD') {
-      const fc = fcbhConfFor(ver, book, chapter);
-      if (fc) {
-        audio.src = `https://www.wordproaudio.net/bibles/app/audio/16/${fc.num}/${chapter}.mp3`;
-        audio.load();
-        setVolume(volumeSlider.value);
-        statusEl.textContent = `${audioLabel}: ${book} ${chapter}`;
-        return;
-      }
-    }
+    // WordProject SVD remote stream removed: app is offline-only.
     statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
     return;
   }
 
   if (!AUDIO_VERSIONS.includes(ver)) return;
-  const libriMap = LIBRIVOX_MAP[ver];
 
   if (ver === 'ASV') {
     const localSlug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2346,23 +2086,10 @@ async function autoLoadAudio() {
         return;
       }
     } catch (e) {}
-    try {
-      const files = await fetchLibrivoxFiles('englishAudioASV');
-      const slug = book.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const bookFiles = files.filter(file => file.name.startsWith(`englishasv/${slug}/`));
-      const file = matchChapter(bookFiles, chapter);
-      if (!file) throw new Error('ASV chapter unavailable');
-      audio.src = `https://archive.org/download/englishAudioASV/${file.name.split('/').map(encodeURIComponent).join('/')}`;
-      audio.load();
-      setVolume(volumeSlider.value);
-      statusEl.textContent = `Audio: ${book} ${chapter} (streaming)`;
-    } catch (err) {
-      statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
-    }
     return;
   }
 
-  // Local LibriVox copies are stored as <bookslug>_<chapter>_<ver>.mp3,
+  // Local audio copies are stored as <bookslug>_<chapter>_<ver>.mp3,
   // e.g. matthew_1_kjv.mp3. KJV/YLT use spelled-out slugs; WEB uses the
   // archive.org abbreviations (1cor, matt, prov, ...).
   const LOCAL_SLUGS = {
@@ -2384,23 +2111,6 @@ async function autoLoadAudio() {
       return;
     }
   } catch (e) {}
-
-  // Streaming fallback (LibriVox); versions without a remote copy stop here.
-  const identifier = libriMap && libriMap[book];
-  if (!identifier) return;
-  try {
-    const files = await fetchLibrivoxFiles(identifier);
-    if (!files.length) return;
-    const file = matchChapter(files, chapter);
-    if (!file) return;
-    const url = `https://archive.org/download/${identifier}/${encodeURIComponent(file.name)}`;
-    audio.src = url;
-    audio.load();
-    setVolume(volumeSlider.value);
-    statusEl.textContent = `Audio: ${book} ${chapter} (streaming)`;
-  } catch (err) {
-    statusEl.textContent = `Audio unavailable for ${book} ${chapter}.`;
-  }
 }
 
 
@@ -3079,6 +2789,35 @@ function langPrefixes(lang) {
 const LS_SAVED_VOICE = 'kgnt_ttsVoice';
 let voiceRetryTimer = null;
 
+// Local Piper TTS server (piper/serve.sh). No external hosts are ever contacted.
+const PIPER_URL = 'http://127.0.0.1:5000';
+let piperProbed = false;
+let piperVoices = [];
+
+function piperOptions(prefixes) {
+  piperVoices.forEach((name) => {
+    if (document.querySelector(`#ttsVoice option[value="piper:${name}"]`)) return;
+    const langCode = String(name).split('_')[0];
+    const opt = new Option(`Piper ${name}`, 'piper:' + name);
+    if (prefixes.includes(langCode) || prefixes.some(p => langCode.startsWith(p))) opt.dataset.langMatch = '1';
+    ttsVoiceSelect.appendChild(opt);
+  });
+}
+
+function addPiperVoices(prefixes, restore) {
+  piperOptions(prefixes);
+  if (piperProbed) { if (restore && !ttsVoiceSelect.value) restoreVoices(prefixes); return; }
+  piperProbed = true;
+  fetch(PIPER_URL + '/voices', { signal: AbortSignal.timeout(800) })
+    .then(r => (r.ok ? r.json() : { voices: [] }))
+    .then((data) => {
+      piperVoices = data.voices || [];
+      piperOptions(prefixes);
+      if (restore && !ttsVoiceSelect.value) restoreVoices(prefixes);
+    })
+    .catch(() => {});
+}
+
 let systemVoices = [];
 let espeakVoices = [];
 let espeakModule = null;
@@ -3129,6 +2868,7 @@ function loadVoices() {
     });
     if (!ttsVoiceSelect.value) restoreVoices(prefixes);
   }).catch(() => {});
+  addPiperVoices(prefixes, true);
 }
 if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
@@ -3136,6 +2876,10 @@ ttsVoiceSelect.onchange = () => { safeSet(LS_SAVED_VOICE, ttsVoiceSelect.value);
 
 function espeakSelected() {
   return (ttsVoiceSelect.value || '').indexOf('espeak:') === 0;
+}
+
+function piperSelected() {
+  return (ttsVoiceSelect.value || '').indexOf('piper:') === 0;
 }
 
 // Shared Web Audio output plumbing (used by the eSpeak engine).
@@ -3265,6 +3009,47 @@ function espeakPlay(chunks, events, text, spans) {
   node.start(ctx.currentTime + startDelayMs / 1000);
 }
 
+function piperSpeakVerse() {
+  if (!ttsRunning) return;
+  const text = verses[ttsIdx] || '';
+  if (!text) { ttsIdx++; ttsSpeak(); return; }
+  const voice = (ttsVoiceSelect.value || '').split(':')[1];
+  highlightVerse(ttsIdx);
+  ttsStatusEl.textContent = `Verse ${ttsIdx + 1} (Piper)...`;
+  clearWordHighlights();
+  const lengthScale = 1.0 / (parseFloat(ttsSpeed.value) || 1);
+  fetch(PIPER_URL + '/synthesize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, voice, length_scale: lengthScale }),
+    signal: AbortSignal.timeout(30000)
+  })
+    .then(r => {
+      if (!r.ok) throw new Error('piper HTTP ' + r.status);
+      return r.arrayBuffer();
+    })
+    .then(buf => {
+      if (!ttsRunning) return;
+      let ctx;
+      try { ctx = fliteAudioCtx(); } catch (e) { ttsStop(); return; }
+      return ctx.decodeAudioData(buf).then((audioBuf) => {
+        const node = ctx.createBufferSource();
+        node.buffer = audioBuf;
+        fliteGain.gain.value = parseFloat(volumeSlider.value) || 1;
+        node.connect(fliteGain);
+        fliteNode = node;
+        node.onended = () => {
+          if (ttsRunning && fliteNode === node) { ttsIdx++; ttsSpeak(); }
+        };
+        node.start();
+      });
+    })
+    .catch((e) => {
+      ttsStatusEl.textContent = 'Piper unavailable: ' + (e && e.message ? e.message : e);
+      ttsStop();
+    });
+}
+
 ttsPlayBtn.onclick = () => {
   if (verses.length === 0) { ttsStatusEl.textContent = 'Load a chapter first.'; return; }
   if (ttsRunning) { ttsPause(); return; }
@@ -3280,7 +3065,7 @@ ttsPlayBtn.onclick = () => {
 ttsStopBtn.onclick = () => { ttsStop(); };
 
 function ttsPause() {
-  if (espeakSelected() && fliteCtx) {
+  if ((espeakSelected() || piperSelected()) && fliteCtx) {
     if (fliteCtx.state === 'suspended') {
       fliteCtx.resume();
       ttsStatusEl.textContent = `Verse ${ttsIdx + 1}...`;
@@ -3418,6 +3203,7 @@ function ttsSpeak() {
     autoAdvanceChapter();
     return;
   }
+  if (piperSelected()) { piperSpeakVerse(); return; }
   if (espeakSelected()) { espeakSpeakVerse(); return; }
   clearWordHighlights();
   const verseText = verses[ttsIdx];

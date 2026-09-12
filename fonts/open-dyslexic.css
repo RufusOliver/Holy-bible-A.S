@@ -1,0 +1,5 @@
+@font-face{
+  font-family:OpenDyslexicRegular;
+  src:local('OpenDyslexic'),
+      url('OpenDyslexic-Regular.woff') format('woff');
+}
