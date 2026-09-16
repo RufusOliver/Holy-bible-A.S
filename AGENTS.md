@@ -36,12 +36,47 @@ for file in data/*.js; do node -e "new Function(require('fs').readFileSync('$fil
 For native Linux changes: `./native-linux/build-appimage.sh` (requires GTK 3, WebKitGTK 4.1, GCC, pkg-config, curl).
 
 ## Agents
-- `bible-app-maintainer` (primary) - maintain app, fix bugs, add features
-- `bible-pr-reviewer` (subagent) - review diffs for regressions, data integrity, accessibility
-- `pr-malware-checker` (subagent) - malware/supply-chain security review for PRs, workflows, dependencies
-- `copilot-cloud` (primary) - GitHub Copilot cloud agent for async issue-to-PR automation (`@copilot` assignment, ephemeral firewalled env, automated CodeQL scanning)
 
-Invoke with `@bible-app-maintainer`, `@bible-pr-reviewer`, `@pr-malware-checker`, `@copilot-cloud` or via Tab cycling for primary agents. For cloud agent, assign issue to `@copilot` or comment `@copilot` on issue/PR.
+The 50-agent company roster lives in `.github/agents/*.agent.md` (loaded by opencode and usable in Copilot flows). All are invoked with `@<name>` or via Tab cycling for primary agents; subagents run through the task dispatcher.
+
+**Primary / leadership**
+- `bible-app-maintainer` - maintain app, fix bugs, add features
+- `copilot-cloud` - GitHub Copilot cloud agent for async issue-to-PR automation (`@copilot` assignment, ephemeral firewalled env, automated CodeQL scanning)
+- `bible-product-planner` - plan features, break work into tasks, route to specialist agents
+
+**Middle managers (dispatch to specialists)**
+- `product-manager` - cross-department delivery coordination
+- `data-manager` - Data & Translations dept
+- `dictionaries-manager` - Dictionaries & Lexicons dept
+- `audio-manager` - Audio & TTS dept
+- `ui-manager` - UI/UX & Accessibility dept
+- `storage-manager` - Storage & State dept
+- `native-manager` - Native & Packaging dept
+- `qa-manager` - Testing & QA dept
+- `ci-release-manager` - CI/CD & Release dept
+- `security-manager` - Security & Review dept
+- `dumbdown-manager` - reports to the boss in plain, simple language
+- `adhd-short-page-manager` - reports to the boss in short scannable pages
+
+**Data & Translations** - `bible-data-engineer`, `translation-loader-engineer`, `verse-numbering-engineer`, `original-languages-engineer`, `translation-editor`, `interlinear-engineer`, `parallel-reading-engineer`, `search-engineer`, `metadata-engineer`, `data-integrity-auditor`
+
+**Dictionaries & Lexicons** - `dictionary-engineer`, `lexicon-engineer`, `hebrew-greek-concordance-engineer`, `dictionary-ui-engineer`
+
+**Audio & TTS** - `audio-sync-engineer`, `tts-engineer`, `audio-asset-manager`, `audio-timestamp-engineer`, `playback-state-engineer`, `audio-controls-engineer`
+
+**UI/UX & Accessibility** - `ui-producer`, `accessibility-engineer`, `rtl-engineer`, `dyslexia-mode-engineer`, `responsive-mobile-engineer`, `theme-settings-engineer`, `keyboard-navigation-engineer`, `typography-reader-engineer`
+
+**Storage & State** - `storage-engineer`, `bookmarks-engineer`, `settings-persistence-engineer`
+
+**Native & Packaging** - `native-linux-engineer`, `appimage-builder`, `packaging-release-engineer`
+
+**Testing & QA** - `qa-test-engineer`, `edge-case-tester`, `regression-tester`, `performance-tester`, `test-automation-engineer`
+
+**CI/CD & Release** - `ci-release-engineer`, `workflow-maintainer`, `dependency-automation-engineer`
+
+**Security & Review** - `bible-pr-reviewer` (review diffs for regressions, data integrity, accessibility), `pr-malware-checker` (malware/supply-chain security review for PRs, workflows, dependencies), `security-hardener`, `supply-chain-auditor`, `code-quality-reviewer`
+
+For the cloud agent, assign issue to `@copilot` or comment `@copilot` on issue/PR.
 
 ## Workflows
 - `ai-agent.yml` - pull_request: AI review, auto-fix, PR summary
