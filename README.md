@@ -101,3 +101,19 @@ The generated AppImage is written to [`build/`](build/).
 | Auto Version | Push to main | Bumps patch version in package.json |
 | Release | Tag push (`v*`) | Publishes AppImage to GitHub Releases |
 
+## Agent company
+
+A 50-agent company roster lives in `.github/agents/*.agent.md` (loaded by opencode; usable in Copilot flows). Invoke primary agents with `@<name>`; subagents run through the task dispatcher.
+
+- **Leadership**: `bible-app-maintainer`, `copilot-cloud`, `bible-product-planner`
+- **Middle managers**: `product-manager`, `data-manager`, `dictionaries-manager`, `audio-manager`, `ui-manager`, `storage-manager`, `native-manager`, `qa-manager`, `ci-release-manager`, `security-manager`, `dumbdown-manager`, `adhd-short-page-manager`
+- **Data & Translations**: `bible-data-engineer`, `translation-loader-engineer`, `verse-numbering-engineer`, `original-languages-engineer`, `translation-editor`, `interlinear-engineer`, `parallel-reading-engineer`, `search-engineer`, `metadata-engineer`, `data-integrity-auditor`
+- **Dictionaries & Lexicons**: `dictionary-engineer`, `lexicon-engineer`, `hebrew-greek-concordance-engineer`, `dictionary-ui-engineer`
+- **Audio & TTS**: `audio-sync-engineer`, `tts-engineer`, `audio-asset-manager`, `audio-timestamp-engineer`, `playback-state-engineer`, `audio-controls-engineer`
+- **UI/UX & Accessibility**: `ui-producer`, `accessibility-engineer`, `rtl-engineer`, `dyslexia-mode-engineer`, `responsive-mobile-engineer`, `theme-settings-engineer`, `keyboard-navigation-engineer`, `typography-reader-engineer`
+- **Storage & State**: `storage-engineer`, `bookmarks-engineer`, `settings-persistence-engineer`
+- **Native & Packaging**: `native-linux-engineer`, `appimage-builder`, `packaging-release-engineer`
+- **Testing & QA**: `qa-test-engineer`, `edge-case-tester`, `regression-tester`, `performance-tester`, `test-automation-engineer`
+- **CI/CD & Release**: `ci-release-engineer`, `workflow-maintainer`, `dependency-automation-engineer`
+- **Security & Review**: `bible-pr-reviewer`, `pr-malware-checker`, `security-hardener`, `supply-chain-auditor`, `code-quality-reviewer`
+
