@@ -14,10 +14,12 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 body.rtl { direction: rtl; text-align: right; }
 body.rtl header { flex-direction: row-reverse; }
 body.rtl .controls { flex-direction: row-reverse; justify-content: flex-start; }
-body.rtl .verse .num { margin-right: 0; margin-left: 6px; }
+body.rtl .verse .num { margin-right: 0; margin-left: 6px; display: inline-block; min-width: 1.6em; text-align: right; direction: rtl; unicode-bidi: isolate; }
 body.rtl .verse.active { border-left: none; border-right: 3px solid #ffc107; }
 body.rtl .verse-info { text-align: left; }
 body.rtl .audio-bar { flex-direction: row-reverse; }
+body.rtl .tts-bar { flex-direction: row-reverse; }
+body.rtl .timestamp-badge { float: left; }
 body.rtl select, body.rtl button { font-family: 'Segoe UI', 'Noto Naskh Arabic', 'Geeza Pro', 'Traditional Arabic', 'Sakkal Majalla', sans-serif; }
 header { background: #0d2a0d; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 2px solid #1a5c2a; }
 header h1 { color: #fff; font-size: 1.4rem; }
@@ -168,6 +170,100 @@ body.dyslexia-bg-dark .dict-overlay { background: rgba(26,26,46,0.95); }
 body.dyslexia .verse:hover { background: rgba(240,192,64,0.2) !important; }
 body.dyslexia .verse.active { background: linear-gradient(135deg, rgba(240,192,64,0.3), rgba(240,160,40,0.45)) !important; border-left-color: #f0c040 !important; }
 body.dyslexia-bg-cream .verse, body.dyslexia-bg-sepia .verse, body.dyslexia-bg-blue .verse, body.dyslexia-bg-green .verse, body.dyslexia-bg-pink .verse { border-bottom: 1px solid rgba(0,0,0,0.08); }
+
+/* Active verse text color & numbers on light dyslexia backgrounds to maintain high contrast */
+body.dyslexia-bg-cream .verse.active,
+body.dyslexia-bg-sepia .verse.active,
+body.dyslexia-bg-blue .verse.active,
+body.dyslexia-bg-green .verse.active,
+body.dyslexia-bg-pink .verse.active {
+  color: #111111 !important;
+}
+body.dyslexia-bg-cream .verse.active .num,
+body.dyslexia-bg-sepia .verse.active .num,
+body.dyslexia-bg-blue .verse.active .num,
+body.dyslexia-bg-green .verse.active .num,
+body.dyslexia-bg-pink .verse.active .num {
+  color: #a55a00 !important;
+}
+body.dyslexia-bg-dark .verse.active {
+  color: #ffffff !important;
+}
+body.dyslexia-bg-dark .verse.active .num {
+  color: #ffc107 !important;
+}
+
+/* Ensure verse numbers are easily readable on light dyslexia backgrounds */
+body.dyslexia-bg-cream .verse .num,
+body.dyslexia-bg-sepia .verse .num,
+body.dyslexia-bg-blue .verse .num,
+body.dyslexia-bg-green .verse .num,
+body.dyslexia-bg-pink .verse .num {
+  color: #1b5e20 !important;
+}
+
+/* High contrast Strong's numbers and transliterations on light dyslexia backgrounds */
+body.dyslexia-bg-cream .verse .w .sn,
+body.dyslexia-bg-sepia .verse .w .sn,
+body.dyslexia-bg-blue .verse .w .sn,
+body.dyslexia-bg-green .verse .w .sn,
+body.dyslexia-bg-pink .verse .w .sn {
+  color: #2e5a2e !important; /* Darker green for Strong's numbers */
+}
+body.dyslexia-bg-cream .verse .w .en,
+body.dyslexia-bg-sepia .verse .w .en,
+body.dyslexia-bg-blue .verse .w .en,
+body.dyslexia-bg-green .verse .w .en,
+body.dyslexia-bg-pink .verse .w .en {
+  color: #114a1a !important; /* Darker forest green for transliterated words */
+}
+body.dyslexia-bg-cream .verse .w .en.kjv,
+body.dyslexia-bg-sepia .verse .w .en.kjv,
+body.dyslexia-bg-blue .verse .w .en.kjv,
+body.dyslexia-bg-green .verse .w .en.kjv,
+body.dyslexia-bg-pink .verse .w .en.kjv {
+  color: #925100 !important; /* Darker amber for archaic KJV definitions */
+}
+
+/* High contrast word highlight numbers and transliterations on light dyslexia active verses */
+body.dyslexia-bg-cream .verse .w.wa .sn,
+body.dyslexia-bg-sepia .verse .w.wa .sn,
+body.dyslexia-bg-blue .verse .w.wa .sn,
+body.dyslexia-bg-green .verse .w.wa .sn,
+body.dyslexia-bg-pink .verse .w.wa .sn {
+  color: #113a11 !important;
+}
+body.dyslexia-bg-cream .verse .w.wa .en,
+body.dyslexia-bg-sepia .verse .w.wa .en,
+body.dyslexia-bg-blue .verse .w.wa .en,
+body.dyslexia-bg-green .verse .w.wa .en,
+body.dyslexia-bg-pink .verse .w.wa .en {
+  color: #0b2e0f !important;
+}
+
+/* Ensure the timestamp badge has sufficient contrast in dark dyslexia mode */
+body.dyslexia-bg-dark .timestamp-badge {
+  color: #8fbc8f !important;
+}
+
+/* High contrast parallel pane titles on light dyslexia backgrounds */
+body.dyslexia-bg-cream .pane-title,
+body.dyslexia-bg-sepia .pane-title,
+body.dyslexia-bg-blue .pane-title,
+body.dyslexia-bg-green .pane-title,
+body.dyslexia-bg-pink .pane-title {
+  color: #1b5e20 !important;
+}
+
+/* High contrast parallel view word difference indicators on light dyslexia backgrounds */
+body.dyslexia-bg-cream.parallel .verse .w.diff,
+body.dyslexia-bg-sepia.parallel .verse .w.diff,
+body.dyslexia-bg-blue.parallel .verse .w.diff,
+body.dyslexia-bg-green.parallel .verse .w.diff,
+body.dyslexia-bg-pink.parallel .verse .w.diff {
+  background: rgba(240, 192, 64, 0.15) !important;
+  border-bottom-color: #f0a000 !important;
+}
 </style>
 </head>
 <body>
@@ -1713,6 +1809,7 @@ function verseMarkup(v, i, primary, version, diffFlags) {
   let wordIdx = 0;
   const words = v.split(/(\s+)/).map((tok, ti) => tok.match(/^\s+$/) ? tok : (() => {
     const idx = wordIdx++;
+    const cleanTok = tok.replace(/^[\u064B-\u0652\u0670]+/, '');
     const wordAttr = ` data-word="${escHtml(tok)}"`;
     if (hebrew && showSn) {
       const nums = tok.match(/\d{1,4}/g) || [];
@@ -1729,11 +1826,11 @@ function verseMarkup(v, i, primary, version, diffFlags) {
       const entry = lookupKjvDict(tok);
       const diffAttr = diffFlags && diffFlags[idx] ? ' diff' : '';
       if (!entry) {
-        return `<span class="w${diffAttr}" data-i="${ti}"${wordAttr}>${escHtml(tok)}</span>`;
+        return `<span class="w${diffAttr}" data-i="${ti}"${wordAttr}>${escHtml(cleanTok)}</span>`;
       }
       const gloss = kjvDictModeSel.value === 'modern' ? (entry.modern || entry.def) : (entry.def || entry.modern);
-      let inner = escHtml(tok);
-      if (gloss) inner = `${escHtml(tok)}<span class="en kjv">${escHtml(gloss)}</span>`;
+      let inner = escHtml(cleanTok);
+      if (gloss) inner = `${escHtml(cleanTok)}<span class="en kjv">${escHtml(gloss)}</span>`;
       return `<span class="w${diffAttr}" data-i="${ti}" data-kjv="1"${wordAttr}>${inner}</span>`;
     }
     const il = showSn ? interlinearEntry(tok, i + 1, idx, version) : null;
@@ -1742,17 +1839,25 @@ function verseMarkup(v, i, primary, version, diffFlags) {
     const gAttr = (il && il[0]) ? ` data-g="${escHtml(il[0])}"` : '';
     const snAttr = sn ? ` data-sn="${escHtml(fullSn || sn)}"` : '';
     const diffAttr = diffFlags && diffFlags[idx] ? ' diff' : '';
-    let inner = escHtml(tok);
+    let inner = escHtml(cleanTok);
     if (il && (il[0] || il[1])) {
-      inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(tok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
+      inner = `<span class="sn">${escHtml(il[0] || sn || '')}</span>${escHtml(cleanTok)}${il[1] ? `<span class="en">${escHtml(il[1])}</span>` : ''}`;
     } else if (showSn && sn) {
-      inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(tok)}`;
+      inner = `<span class="sn">${escHtml(sn)}</span>${escHtml(cleanTok)}`;
     }
     return `<span class="w${diffAttr}" data-i="${ti}"${snAttr}${wordAttr}${gAttr}>${inner}</span>`;
   })()).join('');
   return `<div class="verse"${primary ? ` data-index="${i}"` : ''}>
-    <span class="num">${i+1}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
+    <span class="num">${verseNumLabel(i + 1, version || versionSelect.value)}</span>${words}${primary ? `<span class="timestamp-badge">${timestamps[i] != null ? formatTime(timestamps[i]) : '--:--'}</span>` : ''}
   </div>`;
+}
+
+function verseNumLabel(n, version) {
+  const lang = VERSIONS[version] && VERSIONS[version].lang;
+  if (lang === 'ar' || lang === 'aii') {
+    return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  }
+  return String(n);
 }
 
 function tokenizeVerse(t) {
