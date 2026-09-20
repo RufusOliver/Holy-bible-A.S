@@ -19,6 +19,17 @@ This is the Holy Bible A.S project: a vanilla HTML/CSS/JavaScript Bible reader (
 - Keep resource paths relative (works from static server and native wrapper).
 - Do not edit generated output or vendored data.
 
+## Terminology (required)
+- ALWAYS call the ancient Greek of the critical texts (Nestle1904, SBLGNT, NTGT, EPT/ElzevirTR) by its full name: **Koine Greek**.
+- NEVER say "Greek" by itself to refer to the language of these Bible versions. Plain "Greek" alone is disallowed.
+- "Koine Greek" alone is allowed and preferred. Avoid hybrid labels like "Greek NT" or bare "GNT" in user-facing version labels when the intent is Koine Greek.
+- DO NOT rename dictionary titles that are proper names (e.g., "Thayer's Greek Lexicon", "Strong's Greek Dictionary").
+- DO NOT rewrite the English "Good News Translation" version key `GNT`.
+- ALWAYS call the Hebrew of the critical texts (WLCa, WLC, WLCC, HAC, DHNT) **Paleo-Hebrew**.
+- NEVER say "Hebrew" by itself to refer to these Bible versions. Plain "Hebrew" alone is disallowed.
+- "Paleo-Hebrew" alone is allowed and preferred. Avoid hybrid labels like "Hebrew Bible" or bare "he" in user-facing version labels when the intent is Paleo-Hebrew.
+- DO NOT rename dictionary titles that are proper names (e.g., "Strong's Hebrew Dictionary", "Brown-Driver-Briggs Hebrew Lexicon").
+
 ## Validation
 ```bash
 # JS syntax check for index.html
