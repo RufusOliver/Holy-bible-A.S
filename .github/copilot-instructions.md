@@ -21,6 +21,8 @@ Holy Bible A.S is a vanilla HTML, CSS, and JavaScript Bible reader with local Bi
 - Maintain keyboard access, visible focus, accessible labels, readable contrast, mobile layout, RTL reading, and dyslexia-friendly mode.
 - Keep resource paths relative so the app works from a static server and inside the native wrapper.
 - Do not modify generated output, bundled data, release binaries, or unrelated user changes.
+- Always refer to the ancient Greek of the critical texts (Nestle1904, SBLGNT, NTGT, EPT/ElzevirTR) as **Koine Greek**. Never say "Greek" by itself to mean these Bible versions. Keep proper dictionary titles (e.g., "Thayer's Greek Lexicon") and the English "Good News Translation" `GNT` key unchanged.
+- Always refer to the Hebrew of the critical texts (WLCa, WLC, WLCC, HAC, DHNT) as **Paleo-Hebrew**. Never say "Hebrew" by itself to mean these Bible versions. Keep proper dictionary titles (e.g., "Strong's Hebrew Dictionary", "Brown-Driver-Briggs Hebrew Lexicon") unchanged.
 - Keep changes focused and do not commit or create branches unless explicitly requested.
 
 ## Validation
