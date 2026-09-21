@@ -72,7 +72,7 @@ static void relocate_bundled_layout(void) {
 
 static void activate(GtkApplication *application, gpointer user_data) {
     GtkWidget *window = gtk_application_window_new(application);
-    gtk_window_set_title(GTK_WINDOW(window), "Holy Bible A.S");
+    gtk_window_set_title(GTK_WINDOW(window), "Holy C");
     gtk_window_set_default_size(GTK_WINDOW(window), 1280, 800);
     gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
 
