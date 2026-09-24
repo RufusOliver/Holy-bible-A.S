@@ -335,6 +335,7 @@ body.dyslexia-bg-pink.parallel .verse .w.diff {
     <label class="tts-label"><input type="checkbox" id="loopOT" role="radio" aria-checked="false"> Repeat Old Testament</label>
     <label class="tts-label"><input type="checkbox" id="loopPoetic" role="radio" aria-checked="false"> Repeat Poetic Books</label>
     <label class="tts-label"><input type="checkbox" id="loopPaul" role="radio" aria-checked="false"> Repeat Paul's Letters</label>
+    <label class="tts-label"><input type="checkbox" id="loopDeutero" role="radio" aria-checked="false"> Repeat Deuterocanon</label>
     <label class="tts-label"><input type="checkbox" id="loopGospels" role="radio" aria-checked="false"> Repeat Gospels</label>
     <label class="tts-label"><input type="checkbox" id="loopWhole" role="radio" aria-checked="false"> Repeat Whole Bible</label>
   </span>
@@ -498,8 +499,8 @@ const AR_BOOKS = {
   "\ufef3\ufeee\ufea3\ufee8\ufe8e \ufead\ufe85\ufef3\ufe8e": 22
 };
 
-function getBookList() {
-  const v = versionSelect.value;
+function getBookList(versionId) {
+  const v = versionId || versionSelect.value;
   if (v === 'SVD') return AR_BOOKS;
   if (v === 'LXX') return OT_BOOKS;
   if (v === 'Apocrypha') return APOC_BOOKS;
@@ -2117,12 +2118,13 @@ async function navigateToBookChapter(book, chapter) {
 }
 
 // Repeat checkboxes: toggling on immediately jumps to the start of the range.
-const REPEAT_IDS = ['loopNT', 'loopOT', 'loopPoetic', 'loopPaul', 'loopGospels', 'loopWhole'];
+const REPEAT_IDS = ['loopNT', 'loopOT', 'loopPoetic', 'loopPaul', 'loopDeutero', 'loopGospels', 'loopWhole'];
 const REPEAT_RANGE_START = {
   loopNT: () => { const nt = firstNTBook(); return nt ? { book: nt, chapter: 1 } : null; },
   loopOT: () => { const bl = getBookList(); const first = Object.keys(bl)[0]; return first ? { book: first, chapter: 1 } : null; },
   loopPoetic: () => { const bl = getBookList(); const start = localBookName(bl, 'Job'); return start ? { book: start, chapter: 1 } : null; },
   loopPaul: () => { const paul = paulLetterBooks(getBookList()); return paul.length ? { book: paul[0], chapter: 1 } : null; },
+  loopDeutero: () => { const deut = deuteroBooks(getBookList()); return deut.length ? { book: deut[0], chapter: 1 } : null; },
   loopGospels: () => { const gospels = gospelBooks(getBookList()); return gospels.length ? { book: gospels[0], chapter: 1 } : null; },
   loopWhole: () => { const bl = getBookList(); const first = Object.keys(bl)[0]; return first ? { book: first, chapter: 1 } : null; }
 };
@@ -2146,7 +2148,29 @@ REPEAT_IDS.forEach(id => {
     if (!cb.checked) { syncLoopAria(); return; }
     enforceSingleRepeat(id);
     syncLoopAria();
-    const rangeStart = REPEAT_RANGE_START[id]();
+    let rangeStart = REPEAT_RANGE_START[id]();
+    if (!rangeStart && id === 'loopDeutero') {
+      const curLang = VERSIONS[versionSelect.value] && VERSIONS[versionSelect.value].lang;
+      const candidates = Array.from(versionSelect.options)
+        .map(o => o.value)
+        .filter(vid => vid !== versionSelect.value && deuteroBooks(getBookList(vid)).length > 0)
+        .sort((a, b) => {
+          const la = VERSIONS[a] && VERSIONS[a].lang;
+          const lb = VERSIONS[b] && VERSIONS[b].lang;
+          const sameA = Boolean(curLang && la === curLang);
+          const sameB = Boolean(curLang && lb === curLang);
+          if (sameA && !sameB) return -1;
+          if (sameB && !sameA) return 1;
+          return (lb && la === 'ar' ? -1 : 0) || (la && lb === 'ar' ? 1 : 0);
+        });
+      const target = candidates[0];
+      if (target) {
+        statusEl.textContent = 'Repeat Deuterocanon: not in this translation — switching to ' + (VERSIONS[target] && VERSIONS[target].label || target) + '...';
+        versionSelect.value = target;
+        versionSelect.dispatchEvent(new Event('change'));
+        rangeStart = REPEAT_RANGE_START[id]();
+      }
+    }
     if (!rangeStart) {
       cb.checked = false;
       statusEl.textContent = `${cb.closest('label').textContent.trim()}: not available in this translation.`;
@@ -3082,6 +3106,7 @@ function piperOptions(prefixes) {
     if (document.querySelector(`#ttsVoice option[value="piper:${name}"]`)) return;
     const langCode = String(name).split('_')[0];
     const opt = new Option(`Piper ${name}`, 'piper:' + name);
+    opt.dataset.lang = langCode.toLowerCase();
     if (prefixes.includes(langCode) || prefixes.some(p => langCode.startsWith(p))) opt.dataset.langMatch = '1';
     ttsVoiceSelect.appendChild(opt);
   });
@@ -3120,9 +3145,21 @@ function restoreVoices(prefixes) {
     return false;
   };
   if (pick(saved)) return;
+  // Prefer the most specific language first (e.g. Ancient Greek "grc" over
+  // modern "el"), so Koine Greek editions pick espeak:grk/grc and don't fall
+  // back to a generic modern-greek or default English voice.
+  const specific = [...prefixes].sort((a, b) => b.length - a.length);
+  for (const p of specific) {
+    const exact = opts.find(o => {
+      const langs = (o.dataset.lang || '').toLowerCase().split(/[\s,]+/);
+      return langs.some(l => l === p || l.startsWith(p + '-'));
+    });
+    if (exact && pick(exact.value)) return;
+  }
   const firstMatch = opts.find(o => o.dataset.langMatch === '1');
   if (firstMatch && pick(firstMatch.value)) return;
-  if (opts.length) pick(opts[0].value);
+  // No blind default: leave empty so the async eSpeak/Piper loader can
+  // re-run restoreVoices() once a language-matched voice is available.
 }
 
 function loadVoices() {
@@ -3133,6 +3170,7 @@ function loadVoices() {
   ttsVoiceSelect.innerHTML = '';
   systemVoices.forEach((v, i) => {
     const opt = new Option(`${v.name} (${v.lang})`, 'sys:' + i);
+    opt.dataset.lang = (v.lang || '').toLowerCase();
     if (voiceLangMatch(v, prefixes)) opt.dataset.langMatch = '1';
     ttsVoiceSelect.appendChild(opt);
   });
@@ -3146,6 +3184,7 @@ function loadVoices() {
     espeakVoices.forEach(v => {
       const langs = v.languages.map(l => l.name).join(', ');
       const opt = new Option(`eSpeak ${v.name} (${langs})`, 'espeak:' + v.identifier);
+      opt.dataset.lang = v.languages.map(l => l.name.toLowerCase()).join(' ');
       if (v.languages.some(l => prefixes.some(p => l.name === p || l.name.startsWith(p)))) opt.dataset.langMatch = '1';
       ttsVoiceSelect.appendChild(opt);
     });
@@ -3284,7 +3323,7 @@ function espeakPlay(chunks, events, text, spans) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         scheduleProgrammaticScrollEnd();
       }
-    }, startDelayMs + Math.round((ev.audio_position || 0) / 22050 * 1000));
+    }, startDelayMs + Math.round(ev.audio_position || 0)); // audio_position is already ms
   });
   node.onended = () => {
     if (ttsRunning && fliteNode === node) { ttsIdx++; ttsSpeak(); }
@@ -3413,16 +3452,20 @@ function autoAdvanceChapter(mode) {
     const books = Object.keys(bookList);
     const idx = books.indexOf(currentBook);
     const paul = paulLetterBooks(bookList);
+    const deut = deuteroBooks(bookList);
     const gospels = gospelBooks(bookList);
     const poeticStart = localBookName(bookList, 'Job');
     const poeticEnd = localBookName(bookList, 'Song of Solomon');
     if ($('loopPoetic').checked && poeticStart && poeticEnd && currentBook === poeticEnd) {
       currentBook = poeticStart;
       currentChapter = 1;
-    } else if ($('loopPaul').checked && paul.length > 1 && currentBook === paul[paul.length - 1]) {
-      currentBook = paul[0];
-      currentChapter = 1;
-    } else if ($('loopGospels').checked && gospels.length > 1 && currentBook === gospels[gospels.length - 1]) {
+      } else if ($('loopPaul').checked && paul.length > 1 && currentBook === paul[paul.length - 1]) {
+        currentBook = paul[0];
+        currentChapter = 1;
+      } else if ($('loopDeutero').checked && deut.length > 1 && currentBook === deut[deut.length - 1]) {
+        currentBook = deut[0];
+        currentChapter = 1;
+      } else if ($('loopGospels').checked && gospels.length > 1 && currentBook === gospels[gospels.length - 1]) {
       currentBook = gospels[0];
       currentChapter = 1;
     } else if (idx < 0 || idx >= books.length - 1) {
@@ -3521,6 +3564,17 @@ function paulLetterBooks(bookList) {
   const ntOrder = Object.keys(NT_BOOKS);
   return PAUL_LETTERS
     .map(name => names[base + ntOrder.indexOf(name)])
+    .filter(Boolean);
+}
+
+// Deuterocanonical books carried by the active edition, in canon order.
+// Resolved against whatever book list the current version exposes, so
+// "Repeat Deuterocanon" works in any edition that includes these books
+// (Apocrypha, LXX, Arabic-with-Apocrypha, Koine Greek) — not only the
+// Koine-Greek-only editions. Returns [] when the edition has none.
+function deuteroBooks(bookList) {
+  return Object.keys(APOC_BOOKS)
+    .map(name => localBookName(bookList, name))
     .filter(Boolean);
 }
 
