@@ -1,12 +1,18 @@
 # Security
 
 ## Reporting a Vulnerability
-Please report security issues through the project's issue tracker:
-https://github.com/abdelhakimzeraoulia/bible-audio-sync/issues
-Mark the issue as containing sensitive security details. Do not:
-- commit secrets, tokens, or authentication material to this repository
-- include personal data beyond what is required to reproduce the bug
-There is no separate private mail alias; the issue tracker is the reporting channel.
+
+Report security issues privately using GitHub's **Private vulnerability reporting** (Security tab -> Advisories -> Report a vulnerability) at:
+
+https://github.com/RufusOliver/Holy-bible-A.S/security/advisories
+
+**Do not open a public issue for security findings.** Private reports are seen only by repository maintainers, are converted into draft Security Advisories, and can be disclosed on your schedule.
+
+Please include, when available:
+- the affected component (index.html, a data file, the native-linux wrapper)
+- a minimal reproduction and affected versions
+- impact and proposed fix
+Do not commit secrets, tokens, or authentication material to this repository, and do not include personal data beyond what is required to reproduce the bug.
 
 ## Supported
 This is an offline-first, dependency-free single-file web application (index.html)
@@ -29,10 +35,13 @@ no authentication, no cloud sync of user content.
 - No build stepper or runtime fetch of remote code.
 
 ## Security Advisories
-No publicly-disclosed security advisories are currently published for this project.
-Maintainers review dependency and data changes (including translations, lexicons,
-and audio timestamp data) before release; supply-chain checks are run on workflow
-and release changes.
+Private vulnerability reporting is enabled on this repository: reports filed under
+Security tab -> Advisories are converted into draft Security Advisories that
+maintainers reproduce, triage, fix, and publish with coordinated disclosure.
+
+A copy of this file is reviewed by maintainers along with dependency and data
+changes (including translations, lexicons, and audio timestamp data) before
+release; supply-chain checks are run on workflow and release changes.
 
 ## Data Integrity Notes
 - Bible text, verse numbering, Strong's mappings, dictionary entries, and audio

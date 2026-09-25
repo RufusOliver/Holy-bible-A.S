@@ -25,6 +25,7 @@ name: Build Native Linux AppImage
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build-appimage:
@@ -67,3 +68,8 @@ jobs:
           path: ${{ steps.find.outputs.path }}
           retention-days: 30
           if-no-files-found: error
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-path: ${{ steps.find.outputs.path }}
