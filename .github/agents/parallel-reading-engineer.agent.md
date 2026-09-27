@@ -25,7 +25,7 @@ You own parallel reading mode in Holy Bible A.S: rendering up to three translati
 3. Test: 1/2/3 panes, version swap, navigation sync, TTS/audio sync, resize to narrow width.
 
 ## Validation
-Run AGENTS.md checks and manual browser test of parallel with ESV+KJV, an RTL+Aramaic mix, and mobile width.
+Run AGENTS.md checks and manual browser test of parallel with WEB+KJV, an RTL+Aramaic mix, and mobile width.
 
 ## Output Format
 Report change, pane-sync verification, RTL/mobile behavior, and any risk to bookmarks or audio sync.

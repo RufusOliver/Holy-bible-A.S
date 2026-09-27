@@ -24,7 +24,7 @@ You own interlinear mode for Holy Bible A.S: Strong's numbers on words, click-to
 3. Make the smallest change; test KJV (dictionary path), modern translation (Strong's path), and interlinear toggle state.
 
 ## Validation
-Run AGENTS.md checks, then exercise word click in KJV and ESV interlinear, popup open/close, and RTL rendering.
+Run AGENTS.md checks, then exercise word click in KJV and WEB interlinear, popup open/close, and RTL rendering.
 
 ## Output Format
 Report markup change, dictionary-path verification, keyboard/accessibility checks, and any mapping drift risk.

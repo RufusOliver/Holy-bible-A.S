@@ -506,7 +506,7 @@ function getBookList(versionId) {
   if (v === 'Apocrypha') return APOC_BOOKS;
   if (v === 'WLCa' || v === 'WLC' || v === 'WLCC' || v === 'HAC') return OT_BOOKS;
 if (v === 'DHNT') return NT_BOOKS;
-  if (v === 'TR' || v === 'NTGT' || v === 'SBLGNT' || v === 'EPT' || v === 'WPNT' || v === 'Nestle1904') return NT_BOOKS;
+  if (v === 'TR' || v === 'NTGT' || v === 'SBLGNT' || v === 'EPT' || v === 'WPNT' || v === 'Nestle1904' || v === 'Byzantine' || v === 'Orthodox') return NT_BOOKS;
   if (v === 'ain_ABT') { const m = {}; Object.assign(m, {'Psalms': 150}, NT_BOOKS); return m; }
   const all = {};
   Object.assign(all, OT_BOOKS, NT_BOOKS);
@@ -552,72 +552,6 @@ const ALL_VERSIONS = {
     localVar: "_DATA_kjv",
     file: "kjv.js"
   },
-  "NKJV": {
-    label: "New King James Version (1982)",
-    lang: "en",
-    localVar: "_DATA_nkjv",
-    file: "nkjv.js"
-  },
-  "NIV": {
-    label: "New International Version (2011)",
-    lang: "en",
-    localVar: "_DATA_niv",
-    file: "niv.js"
-  },
-  "NIV1984": {
-    label: "New International Version (1984)",
-    lang: "en",
-    localVar: "_DATA_niv1984",
-    file: "niv1984.js"
-  },
-  "TNIV": {
-    label: "Today's New International Version (2005)",
-    lang: "en",
-    localVar: "_DATA_tniv",
-    file: "tniv.js"
-  },
-  "NIrV": {
-    label: "New International Reader's Version (1998)",
-    lang: "en",
-    localVar: "_DATA_nirv",
-    file: "nirv.js"
-  },
-  "ESV": {
-    label: "English Standard Version (2016)",
-    lang: "en",
-    localVar: "_DATA_esv",
-    file: "esv.js"
-  },
-  "NLT": {
-    label: "New Living Translation (2015)",
-    lang: "en",
-    localVar: "_DATA_nlt",
-    file: "nlt.js"
-  },
-  "CSB": {
-    label: "Christian Standard Bible (2017)",
-    lang: "en",
-    localVar: "_DATA_csb",
-    file: "csb.js"
-  },
-  "CEB": {
-    label: "Common English Bible (2011)",
-    lang: "en",
-    localVar: "_DATA_ceb",
-    file: "ceb.js"
-  },
-  "ERV": {
-    label: "Easy-to-Read Version (2006)",
-    lang: "en",
-    localVar: "_DATA_erv",
-    file: "erv.js"
-  },
-  "GNT": {
-    label: "Good News Translation (2001)",
-    lang: "en",
-    localVar: "_DATA_gnt",
-    file: "gnt.js"
-  },
   "WEB": {
     label: "World English Bible",
     lang: "en",
@@ -635,12 +569,6 @@ const ALL_VERSIONS = {
     lang: "en",
     localVar: "_DATA_net",
     file: "net.js"
-  },
-  "NASB": {
-    label: "New American Standard Bible (1995)",
-    lang: "en",
-    localVar: "_DATA_nasb",
-    file: "nasb.js"
   },
   "GNV": {
     label: "Geneva Bible (1599)",
@@ -660,41 +588,11 @@ const ALL_VERSIONS = {
     localVar: "_DATA_lsv",
     file: "lsv.js"
   },
-  "MEV": {
-    label: "Modern English Version (2014)",
-    lang: "en",
-    localVar: "_DATA_mev",
-    file: "mev.js"
-  },
-  "CJB": {
-    label: "Complete Jewish Bible (1998)",
-    lang: "en",
-    localVar: "_DATA_cjb",
-    file: "cjb.js"
-  },
   "DRB": {
     label: "Douay Rheims Bible (1582)",
     lang: "en",
     localVar: "_DATA_drb",
     file: "drb.js"
-  },
-  "RSV": {
-    label: "Revised Standard Version (1952)",
-    lang: "en",
-    localVar: "_DATA_rsv",
-    file: "rsv.js"
-  },
-  "AMP": {
-    label: "Amplified Bible (2015)",
-    lang: "en",
-    localVar: "_DATA_amp",
-    file: "amp.js"
-  },
-  "CEVD": {
-    label: "Contemporary English Version (2006)",
-    lang: "en",
-    localVar: "_DATA_cevd",
-    file: "cevd.js"
   },
   "TS2009": {
     label: "The Scriptures (2009)",
@@ -714,24 +612,6 @@ const ALL_VERSIONS = {
     localVar: "_DATA_tlv",
     file: "tlv.js"
   },
-  "LSB": {
-    label: "Legacy Standard Bible",
-    lang: "en",
-    localVar: "_DATA_lsb",
-    file: "lsb.js"
-  },
-  "NRSVCE": {
-    label: "New Revised Standard Version Catholic Edition (1993)",
-    lang: "en",
-    localVar: "_DATA_nrsvce",
-    file: "nrsvce.js"
-  },
-  "NJB": {
-    label: "New Jerusalem Bible (1985)",
-    lang: "en",
-    localVar: "_DATA_njb",
-    file: "njb.js"
-  },
   "SPE": {
     label: "Samaritan Pentateuch English (2013)",
     lang: "en",
@@ -743,18 +623,6 @@ const ALL_VERSIONS = {
     lang: "en",
     localVar: "_DATA_lbp",
     file: "lbp.js"
-  },
-  "RSV2CE": {
-    label: "Revised Standard Version Catholic Edition",
-    lang: "en",
-    localVar: "_DATA_rsv2ce",
-    file: "rsv2ce.js"
-  },
-  "NABRE": {
-    label: "New American Bible Revised Edition",
-    lang: "en",
-    localVar: "_DATA_nabre",
-    file: "nabre.js"
   },
   "AUV": {
     label: "An Understandable Version (1995)",
@@ -768,29 +636,11 @@ const ALL_VERSIONS = {
     localVar: "_DATA_isv",
     file: "isv.js"
   },
-  "NLV": {
-    label: "New Life Version (1969)",
-    lang: "en",
-    localVar: "_DATA_nlv",
-    file: "nlv.js"
-  },
   "WPNT": {
     label: "Wilbur Pickering's New Testament",
     lang: "en",
     localVar: "_DATA_wpnt",
     file: "wpnt.js"
-  },
-  "NIVUK": {
-    label: "New International Version UK (2011)",
-    lang: "en",
-    localVar: "_DATA_nivuk",
-    file: "nivuk.js"
-  },
-  "NAV": {
-    label: "كتاب الحياة (Book of Life)",
-    lang: "ar",
-    localVar: "_DATA_nav",
-    file: "nav.js"
   },
   "EPT": {
     label: "EPT Koine Greek — Elzevir Textus Receptus (1624)",
@@ -803,6 +653,18 @@ const ALL_VERSIONS = {
     lang: "grc",
     localVar: "_DATA_ntgt",
     file: "ntgt.js"
+  },
+  "Byzantine": {
+    label: "Byzantine Majority Text (2005)",
+    lang: "grc",
+    localVar: "_DATA_byzantine2005",
+    file: "byzantine2005.js"
+  },
+  "Orthodox": {
+    label: "Greek Orthodox Church (1904)",
+    lang: "grc",
+    localVar: "_DATA_greekOrthodox1904",
+    file: "greekOrthodox1904.js"
   },
   "WLCa": {
     label: "Westminster Leningrad Codex (vowels+accents+Strongs)",
@@ -915,7 +777,7 @@ const ALL_VERSIONS = {
 };
 
 const BROKEN_DATA_VERSIONS = new Set([
-  'Byzantine', 'Orthodox', 'ScrivenerTR', 'StephanusTR', 'Tischendorf', 'WH', 'LXX',
+  'ScrivenerTR', 'StephanusTR', 'Tischendorf', 'WH', 'LXX',
   'Apocrypha'
 ]);
 const VERSIONS = Object.fromEntries(
@@ -1772,8 +1634,8 @@ function populateParallelSelects() {
     par4Sel.add(new Option(VERSIONS[v].label, v));
   });
   const mainV = versionSelect.value;
-  const prefs = ['NHEB', 'SVD', 'NAV', 'SBLGNT', 'Byzantine', 'Orthodox'];
-  const avails = prefs.filter(p => p !== mainV);
+  const prefs = ['NHEB', 'SVD', 'SBLGNT', 'KJV', 'WEB', 'ASV', 'YLT', 'DRB'];
+  const avails = prefs.filter(p => p !== mainV && VERSIONS[p]);
   par2Sel.value = avails[0] || '';
   par3Sel.value = avails[1] || '';
   par4Sel.value = avails[2] || '';
@@ -2052,7 +1914,7 @@ function parseAudioFilename(name) {
   // e.g. "genesis 1 kjv", "matt 1 web", "genesis 1"
   const parts = base.split(/\s+/);
   // Last part might be a version tag
-  const knownVersions = new Set(['KJV', 'YLT', 'ASV', 'WEB', 'NKJV', 'NIV', 'ESV']);
+  const knownVersions = new Set(['KJV', 'YLT', 'ASV', 'WEB']);
   let versionHint = null;
   let candidateParts = parts;
   if (parts.length >= 2 && knownVersions.has(parts[parts.length - 1].toUpperCase())) {
@@ -2227,14 +2089,7 @@ let currentWordEl = null;
 // FCBH audio modules: per-testament dir (relative to AUDIO_BASE), module code,
 // and name-field width. GRKEPT pairs with ElzevirTR (Byzantine-family Koine Greek).
 const FCBH_AUDIO = {
-  ESV: {
-    NT: { dir: 'ENGESHN1DA/English_eng_ESV_NT_Non-Drama', module: 'ENGESHN1DA', width: 12 }
-  },
-  NLT: {
-    OT: { dir: 'ENGNLHO1DA/English_eng_NLH_OT_Non-Drama', module: 'ENGNLHO1DA', width: 12 },
-    NT: { dir: 'ENGNLHN1DA/ENGNLHN1DA', module: 'ENGNLHN1DA', width: 14 }
-  },
-SVD: {
+  SVD: {
     OT: { dir: 'svd', module: 'ARZVDVO1DA', width: 12 },
     NT: { dir: 'svd', module: 'ARZVDVO1DA', width: 12 }
   },
@@ -2332,7 +2187,7 @@ async function autoLoadAudio() {
   const chapter = currentChapter;
   if (!book || !chapter) return false;
 
-  // FCBH local audio (ESV, NLT, Arabic, ElzevirTR)
+  // FCBH local audio (SVD Arabic, ElzevirTR Koine Greek)
   if (FCBH_AUDIO[ver]) {
     const audioLabel = ver === 'EPT' ? 'Koine Greek Ecumenical Patriarchal Text' : `${ver} Audio`;
     const localSlug = book.toLowerCase().replace(/\s+/g, '_');

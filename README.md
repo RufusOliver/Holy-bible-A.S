@@ -16,7 +16,7 @@ Then visit <http://localhost:8000>.
 
 ## Bundled audio (Git LFS)
 
-Audio for ASV, ESV, Greek (Ecumenical Patriarchal), KJV, NLT, WEB, and YLT is stored as Git LFS objects. Install Git LFS and pull the audio once after cloning:
+Audio for ASV, Greek (Ecumenical Patriarchal), KJV, WEB, and YLT is stored as Git LFS objects. Install Git LFS and pull the audio once after cloning:
 
 ```bash
 git lfs install
@@ -61,7 +61,7 @@ The generated AppImage is written to [`build/`](build/).
 ## Features
 
 - **60+ Bible translations** — English, Greek, Hebrew, Arabic, Aramaic
-- **Audio player** — Local MP3 files for KJV, YLT, ASV, WEB, ESV, NLT, and the Greek Ecumenical Patriarchal Text
+- **Audio player** — Local MP3 files for KJV, YLT, ASV, WEB, and the Greek Ecumenical Patriarchal Text
 - **Verse sync** — Timestamp-based audio synchronization with verse highlighting
 - **TTS Audiobook** — Text-to-speech with word-level highlighting, voice selection, speed control, and auto-advance (OT/NT/Whole Bible loops)
 - **Parallel reading** — Compare up to 3 translations side by side
@@ -88,7 +88,7 @@ The generated AppImage is written to [`build/`](build/).
 | --- | --- |
 | [`index.html`](index.html) | Web application (HTML + CSS + JS in one file) |
 | [`data/`](data/) | Bible translations, dictionaries, and reference data |
-| [`audio/`](audio/) | Bible audio for 7 editions (ASV, ESV, Greek, KJV, NLT, WEB, YLT), stored as Git LFS objects; run `git lfs pull` after cloning |
+| [`audio/`](audio/) | Bible audio for 5 editions (ASV, Greek, KJV, WEB, YLT), stored as Git LFS objects; run `git lfs pull` after cloning |
 | [`native-linux/`](native-linux/) | GTK/WebKit wrapper and AppImage build script |
 
 ## CI/CD
